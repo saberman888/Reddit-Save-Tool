@@ -32,6 +32,7 @@ State Saver::SaveToggle(std::string fullname, bool remove)
 	std::string json;
 	int responsecode = 0;
 	State response;
+	std::string rheader;
 
 	handle = curl_easy_init();
 	if (handle)
@@ -44,7 +45,8 @@ State Saver::SaveToggle(std::string fullname, bool remove)
 		sheader += this->token;
 
 		header = curl_slist_append(header, sheader.c_str());
-		if (curl_global_init(CURL_GLOBAL_SSL) != CURLE_OK) {
+		CURLcode gres = curl_global_init(CURL_GLOBAL_ALL);
+		if ( gres == CURLE_OK) {
 			if (remove == false) {
 				curl_easy_setopt(handle, CURLOPT_URL, "https://oauth.reddit.com/api/save");
 			}
@@ -62,6 +64,7 @@ State Saver::SaveToggle(std::string fullname, bool remove)
 			curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, writedat);
 			curl_easy_setopt(handle, CURLOPT_WRITEDATA, &json);
 			curl_easy_setopt(handle, CURLOPT_USERAGENT, this->useragent.c_str());
+			curl_easy_setopt(handle, CURLOPT_HEADERDATA, &rheader);
 #ifdef _DEBUG
 			curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
 #endif
@@ -73,6 +76,10 @@ State Saver::SaveToggle(std::string fullname, bool remove)
 
 #ifdef _DEBUG
 			QFIO("savetoggle_data.txt", json);
+#endif
+
+#ifdef _DEBUG
+			QFIO("savetoggle_header_data.txt", rheader);
 #endif
 			if (result != CURLE_OK)
 			{
@@ -88,7 +95,7 @@ State Saver::SaveToggle(std::string fullname, bool remove)
 		}
 		else {
 			curl_easy_cleanup(handle);
-			response.message = "Failed to load curl_global_init!";
+			response.message = curl_easy_strerror(gres);
 			response.http_state = -1;
 		}
 
@@ -114,7 +121,8 @@ State Saver::obtain_token(bool refresh)
 #endif
 	if (handle)
 	{
-		if (curl_global_init(CURL_GLOBAL_SSL) != CURLE_OK) {
+		CURLcode gres = curl_global_init(CURL_GLOBAL_ALL);
+		if ( gres == CURLE_OK) {
 			curl_easy_setopt(handle, CURLOPT_URL, initial_url.c_str());
 			curl_easy_setopt(handle, CURLOPT_POST, 1L);
 			curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
@@ -196,7 +204,7 @@ State Saver::obtain_token(bool refresh)
 		}
 		else {
 			curl_easy_cleanup(handle);
-			response.message = "Failed to load curl_global_init!";
+			response.message = curl_easy_strerror(gres);
 			response.http_state = -1;
 		}
 
