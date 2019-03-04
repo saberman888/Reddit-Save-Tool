@@ -44,48 +44,58 @@ State Saver::SaveToggle(std::string fullname, bool remove)
 		sheader += this->token;
 
 		header = curl_slist_append(header, sheader.c_str());
-		curl_global_init(CURL_GLOBAL_SSL);
-		if (remove == false) {
-			curl_easy_setopt(handle, CURLOPT_URL, "https://oauth.reddit.com/api/save");
-		}
-		else {
-			curl_easy_setopt(handle, CURLOPT_URL, "https://oauth.reddit.com/api/unsave");
-		}
-		curl_easy_setopt(handle, CURLOPT_POST, 1L);
-		curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header);
+		if (curl_global_init(CURL_GLOBAL_SSL) != CURLE_OK) {
+			if (remove == false) {
+				curl_easy_setopt(handle, CURLOPT_URL, "https://oauth.reddit.com/api/save");
+			}
+			else {
+				curl_easy_setopt(handle, CURLOPT_URL, "https://oauth.reddit.com/api/unsave");
+			}
+			curl_easy_setopt(handle, CURLOPT_POST, 1L);
+			curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header);
 
-		std::string params = "id=";
-		params += fullname;
+			std::string params = "id=";
+			params += fullname;
 
-		curl_easy_setopt(handle, CURLOPT_POSTFIELDS, params.c_str());
-		curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
-		curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, writedat);
-		curl_easy_setopt(handle, CURLOPT_WRITEDATA, &json);
-		curl_easy_setopt(handle, CURLOPT_USERAGENT, this->useragent.c_str());
+			curl_easy_setopt(handle, CURLOPT_POSTFIELDS, params.c_str());
+			curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
+			curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, writedat);
+			curl_easy_setopt(handle, CURLOPT_WRITEDATA, &json);
+			curl_easy_setopt(handle, CURLOPT_USERAGENT, this->useragent.c_str());
 #ifdef _DEBUG
-		curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
+			curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
 #endif
 
-		result = curl_easy_perform(handle);
-		curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &responsecode);
-		curl_easy_cleanup(handle);
-		curl_global_cleanup();
+			result = curl_easy_perform(handle);
+			curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &responsecode);
+			curl_easy_cleanup(handle);
+			curl_global_cleanup();
 
 #ifdef _DEBUG
-		QFIO("savetoggle_data.txt", json);
+			QFIO("savetoggle_data.txt", json);
 #endif
-		if (result != CURLE_OK)
-		{
-			response.http_state = responsecode;
-			response.message = curl_easy_strerror(result);
-			
+			if (result != CURLE_OK)
+			{
+				response.http_state = responsecode;
+				response.message = curl_easy_strerror(result);
+
+			}
+			else {
+
+				response.message = "";
+				response.http_state = responsecode;
+			}
 		}
 		else {
-
-			response.message = "";
-			response.http_state = responsecode;
+			curl_easy_cleanup(handle);
+			response.message = "Failed to load curl_global_init!";
+			response.http_state = -1;
 		}
 
+	}
+	else {
+		response.http_state = -1;
+		response.message = "Failed load libcurl handle!";
 	}
 	return response;
 }
@@ -104,85 +114,92 @@ State Saver::obtain_token(bool refresh)
 #endif
 	if (handle)
 	{
-		curl_global_init(CURL_GLOBAL_SSL);
-		curl_easy_setopt(handle, CURLOPT_URL, initial_url.c_str());
-		curl_easy_setopt(handle, CURLOPT_POST, 1L);
-		curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
-		curl_easy_setopt(handle, CURLOPT_WRITEDATA, &json);
-		curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, &writedat);
-		curl_easy_setopt(handle, CURLOPT_USERAGENT, this->useragent.c_str());
-		std::string userpwd = this->client_id + ":" + this->secret;
-		curl_easy_setopt(handle, CURLOPT_USERPWD, userpwd.c_str());
+		if (curl_global_init(CURL_GLOBAL_SSL) != CURLE_OK) {
+			curl_easy_setopt(handle, CURLOPT_URL, initial_url.c_str());
+			curl_easy_setopt(handle, CURLOPT_POST, 1L);
+			curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
+			curl_easy_setopt(handle, CURLOPT_WRITEDATA, &json);
+			curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, &writedat);
+			curl_easy_setopt(handle, CURLOPT_USERAGENT, this->useragent.c_str());
+			std::string userpwd = this->client_id + ":" + this->secret;
+			curl_easy_setopt(handle, CURLOPT_USERPWD, userpwd.c_str());
 
-		std::string params = "grant_type=";
-		if (refresh == false) {
-			params += "password&username=";
-			params += this->username;
-			params += "&password=";
-			params += this->password;
-			params += "&scope=";
-			params += SCOPE;
-		}
-		else {
-			params += "refresh_token&refresh_token=";
-			params += this->token;
-		}
-
-#ifdef _DEBUG
-		std::cout << params << std::endl;
-#endif
-
-
-		curl_easy_setopt(handle, CURLOPT_POSTFIELDS, params.c_str());
-#ifdef _DEBUG
-		curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
-#endif
-		result = curl_easy_perform(handle);
-		curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &responsecode);
-		curl_easy_cleanup(handle);
-		curl_global_cleanup();
-#ifdef _DEBUG
-		QFIO("token_access.txt", json);
-#endif
-
-		if (result != CURLE_OK)
-		{
-			response.http_state = responsecode;
-			response.message = curl_easy_strerror(result);
-			return response;
-		}
-		else {
-
-
-			nlohmann::json parse = nlohmann::json::parse(json);
-			
-			try {
-				this->token = parse.at("access_token").get<std::string>();
-				response.http_state = responsecode;
-#ifdef _DEBUG
-				std::cout << "Token obtained: " << this->token << std::endl;
-#endif
+			std::string params = "grant_type=";
+			if (refresh == false) {
+				params += "password&username=";
+				params += this->username;
+				params += "&password=";
+				params += this->password;
+				params += "&scope=";
+				params += SCOPE;
 			}
-			catch (nlohmann::json::out_of_range&)
+			else {
+				params += "refresh_token&refresh_token=";
+				params += this->token;
+			}
+
+#ifdef _DEBUG
+			std::cout << params << std::endl;
+#endif
+
+
+			curl_easy_setopt(handle, CURLOPT_POSTFIELDS, params.c_str());
+#ifdef _DEBUG
+			curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
+#endif
+			result = curl_easy_perform(handle);
+			curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &responsecode);
+			curl_easy_cleanup(handle);
+			curl_global_cleanup();
+#ifdef _DEBUG
+			QFIO("token_access.txt", json);
+#endif
+
+			if (result != CURLE_OK)
 			{
-				try {
-					response.message = parse.at("message").get<std::string>();
-					response.http_state = parse.at("error").get<int>();
-				}
-				catch (nlohmann::json::out_of_range&) {
-					try {
-						response.http_state = responsecode;
-						response.message = parse.at("invalid_grant").get<std::string>();
-						response.http_state = -1;
-					}
-					catch (nlohmann::json::out_of_range& e) {
-						response.message = e.what();
-						response.http_state = responsecode;
+				response.http_state = responsecode;
+				response.message = curl_easy_strerror(result);
+				return response;
+			}
+			else {
 
+
+				nlohmann::json parse = nlohmann::json::parse(json);
+
+				try {
+					this->token = parse.at("access_token").get<std::string>();
+					response.http_state = responsecode;
+#ifdef _DEBUG
+					std::cout << "Token obtained: " << this->token << std::endl;
+#endif
+				}
+				catch (nlohmann::json::out_of_range&)
+				{
+					try {
+						response.message = parse.at("message").get<std::string>();
+						response.http_state = parse.at("error").get<int>();
+					}
+					catch (nlohmann::json::out_of_range&) {
+						try {
+							response.http_state = responsecode;
+							response.message = parse.at("invalid_grant").get<std::string>();
+							response.http_state = -1;
+						}
+						catch (nlohmann::json::out_of_range& e) {
+							response.message = e.what();
+							response.http_state = responsecode;
+
+						}
 					}
 				}
 			}
 		}
+		else {
+			curl_easy_cleanup(handle);
+			response.message = "Failed to load curl_global_init!";
+			response.http_state = -1;
+		}
+
 
 	}
 	else {
