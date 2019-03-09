@@ -15,6 +15,24 @@ size_t writedat(char* buffer, size_t size, size_t nmemb, std::string& src)
 	return size * nmemb;
 }
 
+std::map<std::string, std::string> MapHeaders(std::string source)
+{
+	std::istringstream response(source);
+	std::string header;
+	std::string::size_type index;
+	std::map<std::string, std::string> m;
+	while (std::getline(response, header) && header != "\r") {
+		index = header.find(':', 0);
+		if (index != std::string::npos) {
+			m.insert(std::make_pair(
+				boost::algorithm::trim_copy(header.substr(0, index)),
+				boost::algorithm::trim_copy(header.substr(index + 1))
+			));
+		}
+	}
+	return m;
+}
+
 
 void Saver::setAccessData(std::string username, std::string password, std::string client_id, std::string secret, std::string useragent)
 {
@@ -24,6 +42,50 @@ void Saver::setAccessData(std::string username, std::string password, std::strin
 	this->secret = secret;
 	this->useragent = useragent;
 }
+
+State Saver::Save(std::string fullname)
+{
+	if (!is_time_up())
+	{
+		return SaveToggle(fullname, false);
+	}
+	else {
+		State res = obtain_token(true);
+		if (res.http_state != 200) {
+			return res;
+		}
+		else {
+			return SaveToggle(fullname, false);
+		}
+	}
+}
+
+State Saver::UnSave(std::string fullname)
+{
+	if (!is_time_up())
+	{
+		return SaveToggle(fullname, true);
+	}
+	else {
+		State res = obtain_token(true);
+		if (res.http_state != 200) {
+			return res;
+		}
+		else {
+			return SaveToggle(fullname, true);
+		}
+	}
+}
+
+State Saver::AccessSaved()
+{
+	State result;
+	std::string jresponse;
+	std::string hresponse;
+
+	return result;
+}
+
 
 State Saver::SaveToggle(std::string fullname, bool remove)
 {
@@ -179,6 +241,19 @@ State Saver::obtain_token(bool refresh)
 					response.http_state = responsecode;
 #ifdef _DEBUG
 					std::cout << "Token obtained: " << this->token << std::endl;
+#endif
+
+					now = std::chrono::system_clock::now();
+					std::chrono::hours one_hour(1);
+
+					then = now + one_hour;
+
+					std::time_t t = std::chrono::system_clock::to_time_t(then);
+					char stime[26];
+
+					ctime_s(stime, sizeof stime, &t);
+#ifdef _DEBUG
+					std::cout << "Token will expire at: " << stime << std::endl;
 #endif
 				}
 				catch (nlohmann::json::out_of_range&)
