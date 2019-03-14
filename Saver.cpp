@@ -6,6 +6,11 @@ void QFIO(std::string filename, std::string data)
 	std::ofstream(filename.c_str(), std::ios::out) << data; 
 }
 
+void QFIO(std::string filename, nlohmann::json data)
+{
+	std::ofstream(filename.c_str(), std::ios::out) << std::setw(4) << data;
+}
+
 size_t writedat(char* buffer, size_t size, size_t nmemb, std::string& src)
 {
 	for (size_t i = 0; i < size * nmemb; i++)
@@ -77,13 +82,95 @@ State Saver::UnSave(std::string fullname)
 	}
 }
 
+State Saver::get_saved_items()
+{
+	CURL *handle;
+	CURLcode result;
+	State response;
+	struct curl_slist* header = nullptr;
+	std::string jresponse, hresponse;
+	int response_code;
+
+	handle = curl_easy_init();
+
+	if (handle) {
+		std::string authorization_header = "Authorization: bearer ";
+		authorization_header += token;
+
+		header = curl_slist_append(header, authorization_header.c_str());
+
+		CURLcode gres = curl_global_init(CURL_GLOBAL_ALL);
+		if (gres != CURLE_OK) {
+			curl_easy_cleanup(handle);
+			response.message = curl_easy_strerror(gres);
+			response.http_state = -1;
+		}
+		else {
+			std::string url = "https://oauth.reddit.com/user/";
+			url += username + "/saved";
+
+			// add the params
+			std::string sparams = "limit=";
+			sparams += "25";
+
+			curl_easy_setopt(handle, CURLOPT_URL, url.c_str());
+			//curl_easy_setopt(handle, CURLOPT_HTTPGET, 1L);
+			curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header);
+			//curl_easy_setopt(handle, CURLOPT_POSTFIELDS, sparams.c_str());
+			curl_easy_setopt(handle, CURLOPT_USERAGENT, useragent.c_str());
+			curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
+			curl_easy_setopt(handle, CURLOPT_WRITEDATA, &jresponse);
+			curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, &writedat);
+			curl_easy_setopt(handle, CURLOPT_HEADERDATA, &hresponse);
+
+#ifdef _DEBUG
+			curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
+#endif
+			result = curl_easy_perform(handle);
+			curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &response_code);
+			curl_easy_cleanup(handle);
+			curl_global_cleanup();
+
+
+#ifdef _DEBUG
+			QFIO("saved_header_data.txt", hresponse);
+			QFIO("saved_json_data.txt", jresponse);
+#endif
+
+			if (result != CURLE_OK)
+			{
+				response.http_state = response_code;
+				response.message = curl_easy_strerror(result);
+			}
+			else {
+				response.http_state = response_code;
+				response.message = "";
+			}
+		}
+	}
+	else {
+		response.message = "Failed to load libcurl handle!";
+		response.http_state = -1;
+	}
+	return response;
+}
+
 State Saver::AccessSaved()
 {
-	State result;
-	std::string jresponse;
-	std::string hresponse;
-
-	return result;
+	if (!is_time_up())
+	{
+		return get_saved_items();
+	}
+	else {
+		State res = obtain_token(true);
+		if (res.http_state != 200)
+		{
+			return res;
+		}
+		else {
+			return get_saved_items();
+		}
+	}
 }
 
 

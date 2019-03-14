@@ -12,14 +12,16 @@
 #include <stdlib.h>
 #include <chrono>
 #include <ratio>
+#include <iomanip>
 
 #define POST_LIMIT 1000
 #define LIMIT_PER_TOKEN 600
 #define RQ_PER_MINUTE 60
 
 const std::string initial_url = "https://www.reddit.com/api/v1/access_token";
-#define SCOPE "%20save%20account%20read"
+#define SCOPE "%20save%20account%20read%20history"
 void QFIO(std::string filename, std::string data);
+void QFIO(std::string filename, nlohmann::json data);
 struct State
 {
 	int http_state;
@@ -56,5 +58,6 @@ private:
 
 	State obtain_token(bool refresh);
 	State SaveToggle(std::string fullname, bool remove);
+	State get_saved_items();
 	bool is_time_up() {if (now >= then) { return true; } return false;}
 };
