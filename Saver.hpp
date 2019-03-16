@@ -21,7 +21,7 @@
 const std::string initial_url = "https://www.reddit.com/api/v1/access_token";
 #define SCOPE "%20save%20account%20read%20history"
 void QFIO(std::string filename, std::string data);
-void QFIO(std::string filename, nlohmann::json data);
+void JQFIO(std::string filename, std::string json);
 struct State
 {
 	int http_state;
@@ -50,14 +50,22 @@ private:
 	std::string useragent;
 
 	int requests_done;
+	int request_done_in_current_minute;
 
 	std::chrono::system_clock::time_point now;
 	std::chrono::system_clock::time_point then;
+
+	std::chrono::system_clock::time_point mnow;
+	std::chrono::system_clock::time_point mthen;
 
 	std::string token;
 
 	State obtain_token(bool refresh);
 	State SaveToggle(std::string fullname, bool remove);
 	State get_saved_items();
+
+	void restart_minute_clock();
+	void is_mtime_up();
+
 	bool is_time_up() {if (now >= then) { return true; } return false;}
 };

@@ -6,9 +6,17 @@ void QFIO(std::string filename, std::string data)
 	std::ofstream(filename.c_str(), std::ios::out) << data; 
 }
 
-void QFIO(std::string filename, nlohmann::json data)
+void JQFIO(std::string filename, std::string json)
 {
-	std::ofstream(filename.c_str(), std::ios::out) << std::setw(4) << data;
+	nlohmann::json  data;
+		try {
+		data = nlohmann::json::parse(json);
+
+		std::ofstream(filename.c_str(), std::ios::out) << std::setw(4) << data;
+	}
+	catch (nlohmann::json::parse_error&) {
+		std::ofstream(filename.c_str(), std::ios::out) << json;
+	}
 }
 
 size_t writedat(char* buffer, size_t size, size_t nmemb, std::string& src)
@@ -50,6 +58,7 @@ void Saver::setAccessData(std::string username, std::string password, std::strin
 
 State Saver::Save(std::string fullname)
 {
+	is_mtime_up();
 	if (!is_time_up())
 	{
 		return SaveToggle(fullname, false);
@@ -67,6 +76,7 @@ State Saver::Save(std::string fullname)
 
 State Saver::UnSave(std::string fullname)
 {
+	is_mtime_up();
 	if (!is_time_up())
 	{
 		return SaveToggle(fullname, true);
@@ -107,16 +117,14 @@ State Saver::get_saved_items()
 		}
 		else {
 			std::string url = "https://oauth.reddit.com/user/";
-			url += username + "/saved";
+			url += username + "/saved/?limit=10";
 
 			// add the params
 			std::string sparams = "limit=";
 			sparams += "25";
 
 			curl_easy_setopt(handle, CURLOPT_URL, url.c_str());
-			//curl_easy_setopt(handle, CURLOPT_HTTPGET, 1L);
 			curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header);
-			//curl_easy_setopt(handle, CURLOPT_POSTFIELDS, sparams.c_str());
 			curl_easy_setopt(handle, CURLOPT_USERAGENT, useragent.c_str());
 			curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
 			curl_easy_setopt(handle, CURLOPT_WRITEDATA, &jresponse);
@@ -134,7 +142,7 @@ State Saver::get_saved_items()
 
 #ifdef _DEBUG
 			QFIO("saved_header_data.txt", hresponse);
-			QFIO("saved_json_data.txt", jresponse);
+			JQFIO("saved_json_data.txt", jresponse);
 #endif
 
 			if (result != CURLE_OK)
@@ -155,8 +163,36 @@ State Saver::get_saved_items()
 	return response;
 }
 
+void Saver::restart_minute_clock()
+{
+	std::chrono::minutes one_minute(1);
+	mnow = std::chrono::system_clock::now();
+	mthen = mnow + one_minute;
+	request_done_in_current_minute = 0;
+}
+
+void Saver::is_mtime_up()
+{
+	if ((request_done_in_current_minute == RQ_PER_MINUTE)) {
+#ifdef _DEBUG
+		std::cout << "60 requests limit per minute has hit, stalling." << std::endl;
+#endif
+		// Stall then reset time
+		while (mnow != mthen) {
+			// stall
+
+			if (mnow >= mthen)
+				restart_minute_clock(); break;
+		}
+	}
+	else if (mnow >= mthen) {
+		restart_minute_clock();
+	}
+}
+
 State Saver::AccessSaved()
 {
+	is_mtime_up();
 	if (!is_time_up())
 	{
 		return get_saved_items();
