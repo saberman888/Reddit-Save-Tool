@@ -19,10 +19,10 @@
 #define LIMIT_PER_TOKEN 600
 #define RQ_PER_MINUTE 60
 
-const std::string initial_url = "https://www.reddit.com/api/v1/access_token";
-#define SCOPE "%20save%20account%20read%20history"
+#define SCOPE "%20save%20history"
 void QFIO(std::string filename, std::string data);
 void JQFIO(std::string filename, std::string json);
+
 typedef struct _State
 {
 	int http_state;
@@ -43,7 +43,6 @@ typedef struct _Item
 
 
 size_t writedat(char* buffer, size_t size, size_t nmemb, std::string& src);
-std::map<std::string, std::string> MapHeaders(std::string source);
 
 class Saver
 {

@@ -28,25 +28,6 @@ size_t writedat(char* buffer, size_t size, size_t nmemb, std::string& src)
 	return size * nmemb;
 }
 
-std::map<std::string, std::string> MapHeaders(std::string source)
-{
-	std::istringstream response(source);
-	std::string header;
-	std::string::size_type index;
-	std::map<std::string, std::string> m;
-	while (std::getline(response, header) && header != "\r") {
-		index = header.find(':', 0);
-		if (index != std::string::npos) {
-			m.insert(std::make_pair(
-				boost::algorithm::trim_copy(header.substr(0, index)),
-				boost::algorithm::trim_copy(header.substr(index + 1))
-			));
-		}
-	}
-	return m;
-}
-
-
 Saver::Saver(std::string username, std::string password, std::string client_id, std::string secret, std::string useragent)
 {
 	this->username = username;
@@ -433,7 +414,7 @@ State Saver::obtain_token(bool refresh)
 	{
 		CURLcode gres = curl_global_init(CURL_GLOBAL_ALL);
 		if ( gres == CURLE_OK) {
-			curl_easy_setopt(handle, CURLOPT_URL, initial_url.c_str());
+			curl_easy_setopt(handle, CURLOPT_URL, "https://www.reddit.com/api/v1/access_token");
 			curl_easy_setopt(handle, CURLOPT_POST, 1L);
 			curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
 			curl_easy_setopt(handle, CURLOPT_WRITEDATA, &json);
