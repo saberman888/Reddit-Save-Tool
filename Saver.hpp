@@ -56,6 +56,8 @@ public:
 	State AccessSaved(std::vector<Item*>& saved);
 	State AccessReddit() { return this->obtain_token(false); }
 	State RefreshToken() { return this->obtain_token(true); }
+	bool BackupAsJson(std::string filename, std::vector<Item*>& src);
+	bool OutputSaved(std::string filename, std::vector<Item*>& src);
 
 private:
 	std::string username;
@@ -88,7 +90,5 @@ private:
 
 	bool use_old_reddit;
 	bool list_linked_urls;
-public:
-	bool backup_as_json(std::string filename, std::vector<Item*>& src);
-	bool output_simple_format(std::string filename, std::vector<Item*>& src);
+
 };

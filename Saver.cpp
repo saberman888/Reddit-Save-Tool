@@ -232,7 +232,7 @@ void Saver::is_mtime_up()
 	}
 }
 
-bool Saver::backup_as_json(std::string filename, std::vector<Item*>& src)
+bool Saver::BackupAsJson(std::string filename, std::vector<Item*>& src)
 {
 	nlohmann::json root = nlohmann::json::array();
 	for (Item* elem : src)
@@ -256,7 +256,7 @@ bool Saver::backup_as_json(std::string filename, std::vector<Item*>& src)
 	return true;
 }
 
-bool Saver::output_simple_format(std::string filename, std::vector<Item*>& src)
+bool Saver::OutputSaved(std::string filename, std::vector<Item*>& src)
 {
 	std::ofstream out(filename, std::ios::out);
 	if(!out.good())
@@ -314,7 +314,6 @@ State Saver::AccessSaved(std::vector<Item*>& saved)
 		}
 	}
 }
-
 
 State Saver::SaveToggle(std::string fullname, bool remove)
 {
