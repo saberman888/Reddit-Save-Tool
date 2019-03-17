@@ -47,13 +47,15 @@ std::map<std::string, std::string> MapHeaders(std::string source)
 }
 
 
-void Saver::setAccessData(std::string username, std::string password, std::string client_id, std::string secret, std::string useragent)
+Saver::Saver(std::string username, std::string password, std::string client_id, std::string secret, std::string useragent)
 {
 	this->username = username;
 	this->password = password;
 	this->client_id = client_id;
 	this->secret = secret;
 	this->useragent = useragent;
+	this->use_old_reddit = false;
+	this->list_linked_urls = false;
 }
 
 State Saver::Save(std::string fullname)
@@ -92,7 +94,7 @@ State Saver::UnSave(std::string fullname)
 	}
 }
 
-State Saver::get_saved_items()
+State Saver::get_saved_items(std::vector<Item*>& sitem)
 {
 	CURL *handle;
 	CURLcode result;
@@ -119,9 +121,6 @@ State Saver::get_saved_items()
 			std::string url = "https://oauth.reddit.com/user/";
 			url += username + "/saved/?limit=10";
 
-			// add the params
-			std::string sparams = "limit=";
-			sparams += "25";
 
 			curl_easy_setopt(handle, CURLOPT_URL, url.c_str());
 			curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header);
@@ -151,8 +150,70 @@ State Saver::get_saved_items()
 				response.message = curl_easy_strerror(result);
 			}
 			else {
+				try {
+					nlohmann::json root = nlohmann::json::parse(jresponse);
+					auto children = root.at("data").at("children");
+					if (root.at("data").at("after").is_null())
+						after = "";
+					else
+						after = root.at("data").at("after").get<std::string>();
+
+					std::string url;
+					std::string fullname;
+					std::string id;
+					std::string kind;
+					for (auto& elem : children)
+					{
+						Item* it = new Item;
+						
+
+						fullname = elem.at("data").at("name").get<std::string>();
+						kind = elem.at("kind").get<std::string>();
+						url = elem.at("data").at("permalink").get<std::string>();
+
+						if (kind == "t3")
+							it->is_comment = false;
+						else if (kind == "t1")
+							it->is_comment = true;
+						try {
+							it->is_self = elem.at("data").at("is_self").get<bool>();
+						}
+						catch (nlohmann::json::out_of_range) {
+							it->is_self = false;
+						}
+
+						if (!it->is_self && !it->is_comment)
+							it->link_url = elem.at("data").at("url").get<std::string>();
+
+						try {
+							it->domain = elem.at("data").at("domain").get<std::string>();
+						}
+						catch (nlohmann::json::out_of_range) {
+							it->domain = "";
+						}
+						it->permalink = url;
+						it->fullname = fullname;
+						it->id = elem.at("data").at("id").get<std::string>();
+
+#ifdef _DEBUG
+						std::cout << "Saved item: " << url << ", kind: " << kind << ", fullname" << fullname << std::endl;
+#endif
+
+						sitem.push_back(it);
+					}
+
+				}
+				catch (nlohmann::json::exception & e) {
+#ifdef _DEBUG
+					std::cout << e.what() << std::endl;
+#endif
+					response.http_state = -1;
+					response.message = e.what();
+					return response;
+				}
 				response.http_state = response_code;
 				response.message = "";
+
 			}
 		}
 	}
@@ -190,12 +251,76 @@ void Saver::is_mtime_up()
 	}
 }
 
-State Saver::AccessSaved()
+bool Saver::backup_as_json(std::string filename, std::vector<Item*>& src)
+{
+	nlohmann::json root = nlohmann::json::array();
+	for (Item* elem : src)
+	{
+		nlohmann::json item;
+		item["is_self"] = elem->is_self;
+		item["is_comment"] = elem->is_comment;
+		item["permalink"] = elem->permalink;
+		item["id"] = elem->id;
+		item["fullname"] = elem->fullname;
+		item["linked_url"] = elem->link_url;
+		item["domain"] = elem->domain;
+
+		root.push_back(item);
+	}
+
+	std::ofstream out(filename, std::ios::out);
+	if (!out.good())
+		return false;
+	out << std::setw(4) << root;
+	return true;
+}
+
+bool Saver::output_simple_format(std::string filename, std::vector<Item*>& src)
+{
+	std::ofstream out(filename, std::ios::out);
+	if(!out.good())
+		return false;
+	for (Item* elem : src)
+	{
+		std::string url, linked_url;
+		if (use_old_reddit)
+			url = "https://old.reddit.com" + elem->permalink;
+		else
+			url = "https://www.reddit.com" + elem->permalink;
+
+		if(!elem->is_self)
+			linked_url = elem->link_url;
+
+		out << url << std::endl;
+		
+		if (elem->domain == "reddit.com" && use_old_reddit)
+		{
+#ifdef _DEBUG
+			std::cout << "Domain: reddit.com" << std::endl;
+#endif
+			std::string new_linked_url = linked_url.substr(22, linked_url.size());
+#ifdef _DEBUG
+			std::cout << "String substringed as: " << new_linked_url << std::endl;
+#endif
+			linked_url = "https://old.reddit.com" + new_linked_url;
+		}
+
+		if (!elem->is_self && this->list_linked_urls) {
+#ifdef _DEBUG
+			std::cout << "Linked URL: " << linked_url << std::endl;
+#endif
+			out << linked_url << std::endl;
+		}
+	}
+	return true;
+}
+
+State Saver::AccessSaved(std::vector<Item*>& saved)
 {
 	is_mtime_up();
 	if (!is_time_up())
 	{
-		return get_saved_items();
+		return get_saved_items(saved);
 	}
 	else {
 		State res = obtain_token(true);
@@ -204,7 +329,7 @@ State Saver::AccessSaved()
 			return res;
 		}
 		else {
-			return get_saved_items();
+			return get_saved_items(saved);
 		}
 	}
 }
