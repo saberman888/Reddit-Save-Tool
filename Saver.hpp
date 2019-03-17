@@ -65,7 +65,6 @@ private:
 	std::string secret;
 	std::string useragent;
 
-	std::string before;
 	std::string after;
 
 	int requests_done;
