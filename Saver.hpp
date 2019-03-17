@@ -30,7 +30,7 @@ typedef struct _State
 }State;
 
 
-struct Item
+typedef struct _Item
 {
 	bool is_self;
 	bool is_comment;
@@ -38,7 +38,7 @@ struct Item
 	std::string fullname, id;
 	std::string link_url;
 	std::string domain;
-};
+}Item;
 
 
 
