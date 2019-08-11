@@ -1,82 +1,10 @@
 #include "Saver.hpp"
 #include <iostream>
 
-void QFIO(std::string filename, std::string data)
-{
-	std::ofstream(filename.c_str(), std::ios::out) << data; 
-}
 
-void JQFIO(std::string filename, std::string json)
+State Saver::get_saved_items(std::vector< Item* >& sitem, int limit, std::string after, bool prev_continue, bool get_comments)
 {
-	nlohmann::json  data;
-		try {
-		data = nlohmann::json::parse(json);
-
-		std::ofstream(filename.c_str(), std::ios::out) << std::setw(4) << data;
-	}
-	catch (nlohmann::json::parse_error&) {
-		std::ofstream(filename.c_str(), std::ios::out) << json;
-	}
-}
-
-size_t writedat(char* buffer, size_t size, size_t nmemb, std::string& src)
-{
-	for (size_t i = 0; i < size * nmemb; i++)
-	{
-		src.push_back(buffer[i]);
-	}
-	return size * nmemb;
-}
-
-Saver::Saver(std::string username, std::string password, std::string client_id, std::string secret, std::string useragent)
-{
-	this->username = username;
-	this->password = password;
-	this->client_id = client_id;
-	this->secret = secret;
-	this->useragent = useragent;
-	this->use_old_reddit = false;
-	this->list_linked_urls = false;
-}
-
-State Saver::Save(std::string fullname)
-{
-	is_mtime_up();
-	if (!is_time_up())
-	{
-		return SaveToggle(fullname, false);
-	}
-	else {
-		State res = obtain_token(true);
-		if (res.http_state != 200) {
-			return res;
-		}
-		else {
-			return SaveToggle(fullname, false);
-		}
-	}
-}
-
-State Saver::UnSave(std::string fullname)
-{
-	is_mtime_up();
-	if (!is_time_up())
-	{
-		return SaveToggle(fullname, true);
-	}
-	else {
-		State res = obtain_token(true);
-		if (res.http_state != 200) {
-			return res;
-		}
-		else {
-			return SaveToggle(fullname, true);
-		}
-	}
-}
-
-State Saver::get_saved_items(std::vector<Item*>& sitem)
-{
+	std::clog << "Getting saved items" << std::endl;
 	CURL *handle;
 	CURLcode result;
 	State response;
@@ -87,6 +15,7 @@ State Saver::get_saved_items(std::vector<Item*>& sitem)
 	handle = curl_easy_init();
 
 	if (handle) {
+		std::clog << "Setting up header and request." << std::endl;
 		std::string authorization_header = "Authorization: bearer ";
 		authorization_header += token;
 
@@ -100,12 +29,16 @@ State Saver::get_saved_items(std::vector<Item*>& sitem)
 		}
 		else {
 			std::string url = "https://oauth.reddit.com/user/";
-			url += username + "/saved/?limit=10";
+			url += Account->username + "/saved/?limit=" + std::to_string(limit);
+			if (prev_continue)
+				url += "&after=" + after;
+
+			std::clog << "URL has been setup with a limit of " << std::to_string(limit) << " and an after of " << after << std::endl;
 
 
 			curl_easy_setopt(handle, CURLOPT_URL, url.c_str());
 			curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header);
-			curl_easy_setopt(handle, CURLOPT_USERAGENT, useragent.c_str());
+			curl_easy_setopt(handle, CURLOPT_USERAGENT, Account->user_agent.c_str());
 			curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
 			curl_easy_setopt(handle, CURLOPT_WRITEDATA, &jresponse);
 			curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, &writedat);
@@ -119,10 +52,10 @@ State Saver::get_saved_items(std::vector<Item*>& sitem)
 			curl_easy_cleanup(handle);
 			curl_global_cleanup();
 
-
+			tick();
 #ifdef _DEBUG
-			QFIO("saved_header_data.txt", hresponse);
-			JQFIO("saved_json_data.txt", jresponse);
+			QFIO(logpath + "saved_header_data_" + std::to_string(requests_done) +".txt", hresponse);
+			JQFIO(logpath + "saved_json_data_" + std::to_string(requests_done) + ".txt", jresponse);
 #endif
 
 			if (result != CURLE_OK)
@@ -131,56 +64,151 @@ State Saver::get_saved_items(std::vector<Item*>& sitem)
 				response.message = curl_easy_strerror(result);
 			}
 			else {
+				/*nlohmann::json root = nlohmann::json::parse(jresponse);
+				JQA jqa(root);
+				auto kind = jqa.access("/data/after");
+				if (kind.is_string()) {
+					std::cout << "Kind: " << kind.get<std::string>() << std::endl;
+				}*/
+
+				std::clog << "Attempting to parse json structures for saved items" << std::endl;
 				try {
 					nlohmann::json root = nlohmann::json::parse(jresponse);
 					auto children = root.at("data").at("children");
 					if (root.at("data").at("after").is_null())
-						after = "";
+						this->after = "";
 					else
-						after = root.at("data").at("after").get<std::string>();
-
-					std::string url;
-					std::string fullname;
-					std::string id;
-					std::string kind;
-					for (auto& elem : children)
-					{
-						Item* it = new Item;
-						
-
-						fullname = elem.at("data").at("name").get<std::string>();
-						kind = elem.at("kind").get<std::string>();
-						url = elem.at("data").at("permalink").get<std::string>();
-
-						if (kind == "t3")
-							it->is_comment = false;
-						else if (kind == "t1")
-							it->is_comment = true;
-						try {
-							it->is_self = elem.at("data").at("is_self").get<bool>();
-						}
-						catch (nlohmann::json::out_of_range) {
-							it->is_self = false;
-						}
-
-						if (!it->is_self && !it->is_comment)
-							it->link_url = elem.at("data").at("url").get<std::string>();
-
-						try {
-							it->domain = elem.at("data").at("domain").get<std::string>();
-						}
-						catch (nlohmann::json::out_of_range) {
-							it->domain = "";
-						}
-						it->permalink = url;
-						it->fullname = fullname;
-						it->id = elem.at("data").at("id").get<std::string>();
+						this->after = root.at("data").at("after").get<std::string>();
+						//extract_val<std::string>(root.at("data").at("after"), after);
 
 #ifdef _DEBUG
-						std::cout << "Saved item: " << url << ", kind: " << kind << ", fullname" << fullname << std::endl;
+					std::cout << "After: " << this->after << std::endl;
 #endif
 
+					std::clog << "The after is: " << this->after << std::endl;
+
+					int csize = limit;
+					if (csize == 1000)
+						csize = children.size();
+
+					for(int j = 0; j < csize; j++)
+					{
+						auto& elem = children[j];
+						Item* it = new Item;
+
+						it->kind = elem.at("kind").get<std::string>();
+
+						if (it->kind == "t1") {
+							std::clog << "Item is a comment" << std::endl;
+							comments += 1;
+							it->fullname = elem.at("data").at("link_id").get<std::string>();
+							it->url = elem.at("data").at("link_url").get<std::string>();
+							it->is_self = false;
+							try {
+								it->is_video = elem.at("data").at("is_video").get<bool>();
+							}
+							catch (nlohmann::json::out_of_range& e) {
+								it->is_video = false;
+							}
+							it->self_text = "";
+							it->domain = "";
+							std::string title = elem.at("data").at("link_title").get<std::string>();
+							boost::replace_all(title, ",", "&#x2c;");
+							boost::replace_all(title, "\"", "&#x22;");
+							it->title = title;
+							it->orig_body = elem.at("data").at("body").get<std::string>();
+							
+							boost::replace_all(it->body, ",", "&#x2c;");
+							boost::replace_all(it->body, "\"", "&#x22;");
+							boost::replace_all(it->body, "\n", "&#13;");
+							
+							it->body = "\"" + it->body + "\"";
+
+							std::string permalink = elem.at("data").at("permalink").get<std::string>();
+							std::vector<std::string> ptsv;
+							boost::split(ptsv, permalink, boost::is_any_of("/"));
+
+							std::size_t permalink_tail_size = ptsv[ptsv.size() - 2].size();
+
+							permalink = permalink.substr(0, (permalink.size()-2) - permalink_tail_size);
+
+							
+							it->permalink = permalink;
+
+
+							std::string id = elem.at("data").at("link_id").get<std::string>();
+							id = id.substr(3, id.size());
+
+							it->id = id;
+						}
+						else if (it->kind == "t3") {
+							std::clog << "Item is a post" << std::endl;
+							it->fullname = elem.at("data").at("name").get<std::string>();
+							it->url = elem.at("data").at("url").get<std::string>();
+							it->is_self = elem.at("data").at("is_self").get<bool>();
+							try {
+								it->is_video = elem.at("data").at("is_video").get<bool>();
+							}
+							catch (nlohmann::json::out_of_range& e) {
+								it->is_video = false;
+							}
+							if (it->is_self)
+							{
+								it->orig_self_text = elem.at("data").at("selftext").get<std::string>();
+								it->self_text = it->orig_self_text;
+								
+								boost::replace_all(it->self_text, ",", "&#x2c;");
+								boost::replace_all(it->self_text, "\"", "&#x22;");
+								boost::replace_all(it->self_text, "\n", "&#13;");
+							}
+							it->domain = elem.at("data").at("domain").get<std::string>();
+							std::string title = elem.at("data").at("title").get<std::string>();
+							boost::replace_all(title, ",", "&#x2c;");
+							boost::replace_all(title, "\"", "&#x22;");
+							it->title = title;
+							it->permalink = elem.at("data").at("permalink").get<std::string>();
+
+							it->id = elem.at("data").at("id").get<std::string>();
+						}
+						if (!elem.at("data").at("author").is_null())
+							it->author = elem.at("data").at("author").get<std::string>();
+						else
+							it->author = "[deleted]";
+						std::clog << "ID: " << it->id << std::endl;
+						it->created_utc = elem.at("data").at("created_utc").get<long>();
+						it->subreddit = elem.at("data").at("subreddit").get<std::string>();
+						it->num_comments = elem.at("data").at("num_comments").get<int>();
+						it->over_18 = elem.at("data").at("over_18").get<bool>();
+						it->score = elem.at("data").at("score").get<int>();
+						it->stickied = elem.at("data").at("stickied").get<bool>();
+						it->subreddit_id = elem.at("data").at("subreddit_id").get<std::string>();
+
+						// replace permalink
+						it->permalink.replace(0, it->subreddit.size() + 3, "/r/" + Account->username);
+						if(get_comments)
+							RetrieveComments(it);
+
 						sitem.push_back(it);
+						std::clog << it->permalink << std::endl;
+						std::cout << it->permalink << std::endl;
+
+						// before leaving the scope to collect some stats
+						if (it->is_self)
+							self_posts += 1;
+						else
+							links += 1;
+
+						if (it->kind == "t1")
+							comments += 1;
+
+						if (it->IsVideo())
+							videos += 1;
+
+						if (it->IsPossibleImage())
+							images += 1;
+
+						if (j == csize)
+							break;
 					}
 
 				}
@@ -188,10 +216,14 @@ State Saver::get_saved_items(std::vector<Item*>& sitem)
 #ifdef _DEBUG
 					std::cout << e.what() << std::endl;
 #endif
+
+					std::clog << e.what() << std::endl;
 					response.http_state = -1;
 					response.message = e.what();
+					std::clog << "get_saved_items result state: " << response.http_state << ", " << response.message << std::endl;
 					return response;
 				}
+				
 				response.http_state = response_code;
 				response.message = "";
 
@@ -202,106 +234,258 @@ State Saver::get_saved_items(std::vector<Item*>& sitem)
 		response.message = "Failed to load libcurl handle!";
 		response.http_state = -1;
 	}
+	std::clog << "get_saved_items result state: " << response.http_state << ", " << response.message << std::endl;
 	return response;
 }
-
-void Saver::restart_minute_clock()
+State Saver::retrieve_comments(Item* i)
 {
-	std::chrono::minutes one_minute(1);
-	mnow = std::chrono::system_clock::now();
-	mthen = mnow + one_minute;
-	request_done_in_current_minute = 0;
-}
+	std::clog << "retriving comments..." << std::endl;
+	CURLcode result;
+	CURL* handle;
+	std::string jresponse;
+	int httpc;
+	State response;
+	struct curl_slist* header = nullptr;
 
-void Saver::is_mtime_up()
-{
-	if ((request_done_in_current_minute == RQ_PER_MINUTE)) {
-#ifdef _DEBUG
-		std::cout << "60 requests limit per minute has hit, stalling." << std::endl;
-#endif
-		// Stall then reset time
-		while (mnow != mthen) {
-			// stall
+	handle = curl_easy_init();
 
-			if (mnow >= mthen)
-				restart_minute_clock(); break;
+	if (handle)
+	{
+		std::clog << "Setting up header and request." << std::endl;
+		std::string authorization_header = "Authorization: bearer ";
+		authorization_header += token;
+
+		header = curl_slist_append(header, authorization_header.c_str());
+
+		CURLcode gres = curl_global_init(CURL_GLOBAL_ALL);
+		if (gres != CURLE_OK) {
+			curl_easy_cleanup(handle);
+			response.message = curl_easy_strerror(gres);
+			response.http_state = -1;
+		}
+		else {
+			std::string url;
+			if(i->kind == "t3")
+				url = "https://oauth.reddit.com/r/" + i->subreddit + "/comments/" + i->id + "/?limit=500&showmore=true&depth=500";
+			else if(i->kind == "t1")
+				url = "https://oauth.reddit.com/r/" + i->subreddit + "/comments/" + i->id + "/?context=1000&depth=500";
+
+			std::clog << "URL: " << url << std::endl;
+
+			curl_easy_setopt(handle, CURLOPT_URL, url.c_str());
+			curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header);
+			curl_easy_setopt(handle, CURLOPT_USERAGENT, Account->user_agent.c_str());
+			curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
+			curl_easy_setopt(handle, CURLOPT_WRITEDATA, &jresponse);
+			curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, &writedat);
+
+			result = curl_easy_perform(handle);
+			curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &httpc);
+			curl_easy_cleanup(handle);
+			curl_global_cleanup();
+			curl_free(header);
+
+			tick();
+
+			if (result != CURLE_OK)
+			{
+				response.http_state = httpc;
+				response.message = curl_easy_strerror(result);
+			}
+			else {
+
+				JQFIO(logpath + "json\\comments_" + i->id + ".json", jresponse);
+				std::clog << "Parsing comments... " << std::endl;
+				nlohmann::json root = nlohmann::json::parse(jresponse);
+
+				try {
+					response.http_state = root.at("error").get<int>();
+					response.message = root.at("message").get<std::string>();
+					std::clog << "Item: " << response.http_state << ", " << response.message << std::endl;
+					return response;
+				}
+				catch (nlohmann::json::exception&) {
+
+					std::string id;
+					nlohmann::json comments, data;
+					try {
+						comments = root[1];
+						data = comments.at("data");
+
+						for (auto& melem : data.at("children"))
+						{
+							Comment* c = new Comment;
+							auto elem = melem.at("data");
+							i->kind = melem.at("kind").get<std::string>();
+							if( i->kind == "t1"){
+								// going to do something with this in the future
+
+								try {
+									c->author = elem.at("author").get<std::string>();
+								}
+								catch (nlohmann::json::out_of_range&) {
+									c->author = "[deleted]";
+								}
+								try {
+									std::string body = elem.at("body").get<std::string>();
+									boost::replace_all(body, ",", "&#x2c;");
+									boost::replace_all(body, "\"", "&#x22;");
+									boost::replace_all(body, "\n", "&#13;");
+									c->body = "\"" + body + "\"";
+								}
+								catch (nlohmann::json::out_of_range&) {
+									c->body = "[deleted]";
+								}
+								try {
+									c->created_utc = elem.at("created_utc").get<long>();
+								}
+								catch (nlohmann::json::out_of_range&) {
+									c->created_utc = elem.at("created").get<long>();
+								}
+
+								c->link_id = elem.at("link_id").get<std::string>();
+								c->parent_id = elem.at("parent_id").get<std::string>();
+								c->score = elem.at("score").get<int>();
+								c->stickied = elem.at("stickied").get<bool>();
+								c->subreddit_id = elem.at("subreddit_id").get<std::string>();
+
+								i->comments.push_back(c);
+							}
+						}
+					}
+					catch (nlohmann::json::out_of_range& e) {
+						std::cerr << e.what() << std::endl;
+						std::cerr << "Object ID: " << i->id << std::endl;
+
+						std::clog << e.what() << std::endl;
+						std::clog << "Object ID: " << i->id << std::endl;
+
+					}
+				}
+
+				response.http_state = httpc;
+				response.message = "";
+			}
 		}
 	}
-	else if (mnow >= mthen) {
-		restart_minute_clock();
+	else {
+		response.message = "Failed to load libcurl handle!";
+		response.http_state = -1;
 	}
+	std::clog << "get_saved_items result state: " << response.http_state << ", " << response.message << std::endl;
+	return response;
+
 }
 
-bool Saver::BackupAsJson(std::string filename, std::vector<Item*>& src)
+
+bool Saver::write_links(std::vector<Item*> src, std::vector<std::string> subfilter)
 {
-	nlohmann::json root = nlohmann::json::array();
-	for (Item* elem : src)
+	std::clog << "Writing links into CSV" << std::endl;
+	time_t t;
+	struct tm* timeinfo = nullptr;
+
+	time(&t);
+#if defined(_MSC_VER)
+	localtime_s(timeinfo, &t);
+#elif (defined(__MINGW64__) || defined(__MINGW32__))
+	timeinfo = localtime(&t);
+#else 
+	localtime_r(&t,timeinfo);
+#endif
+
+	char datestr[15];
+
+#ifdef __WIN32__
+	std::strftime(datestr, sizeof(datestr), "\\%Y\\%m\\%d\\", timeinfo);
+#else
+	std::strftime(datestr, sizeof(datestr), "/%Y/%m/%d/", timeinfo);
+#endif
+	// Capitalize the username
+	Account->username[0] = toupper(Account->username[0]);
+	
+	std::string path;
+#ifdef __WIN32__
+	path = "data\\" + Account->username + datestr;
+#else
+	path = "data/" + Account->username + datestr;
+#endif
+
+	fs::create_directories(path);
+	std::string filename = path + "links.csv";
+	std::fstream out(filename.c_str(), std::ios::out);
+	// output header
+	out << "author,created_utc,domain,id,is_self,num_comments,over_18,permalink,retrieved_on,score,selftext,stickied,subreddit_id,title,url" << std::endl;
+	int obj_count = 0;
+	for (size_t j = 0; j < src.size(); j++)
 	{
-		nlohmann::json item;
-		item["is_self"] = elem->is_self;
-		item["is_comment"] = elem->is_comment;
-		item["permalink"] = elem->permalink;
-		item["id"] = elem->id;
-		item["fullname"] = elem->fullname;
-		item["linked_url"] = elem->link_url;
-		item["domain"] = elem->domain;
-
-		root.push_back(item);
-	}
-
-	std::ofstream out(filename, std::ios::out);
-	if (!out.good())
-		return false;
-	out << std::setw(4) << root;
-	return true;
-}
-
-bool Saver::OutputSaved(std::string filename, std::vector<Item*>& src)
-{
-	std::ofstream out(filename, std::ios::out);
-	if(!out.good())
-		return false;
-	for (Item* elem : src)
-	{
-		std::string url, linked_url;
-		if (use_old_reddit)
-			url = "https://old.reddit.com" + elem->permalink;
-		else
-			url = "https://www.reddit.com" + elem->permalink;
-
-		if(!elem->is_self)
-			linked_url = elem->link_url;
-
-		out << url << std::endl;
-		
-		if (elem->domain == "reddit.com" && use_old_reddit)
+		auto elem = src[j];
+		bool is_blocked = false;
+		for (auto& selem : subfilter)
 		{
-#ifdef _DEBUG
-			std::cout << "Domain: reddit.com" << std::endl;
-#endif
-			std::string new_linked_url = linked_url.substr(22, linked_url.size());
-#ifdef _DEBUG
-			std::cout << "String substringed as: " << new_linked_url << std::endl;
-#endif
-			linked_url = "https://old.reddit.com" + new_linked_url;
+			if (elem->subreddit == selem){
+				is_blocked = true; break;
+			}
 		}
 
-		if (!elem->is_self && this->list_linked_urls) {
-#ifdef _DEBUG
-			std::cout << "Linked URL: " << linked_url << std::endl;
-#endif
-			out << linked_url << std::endl;
+		if (is_blocked)
+			continue;
+		obj_count += 1;
+		out << elem->author << "," << elem->created_utc << "," << elem->domain << "," << elem->id << ","
+			<< bool2str(elem->is_self) << "," << elem->num_comments
+			<< "," << bool2str(elem->over_18)
+			<< "," << elem->permalink << "," << 0
+			<< "," << elem->score << ",";
+
+		std::clog << elem->author << "," << elem->created_utc << ","
+			<< elem->domain << "," << elem->id << ","
+			<< bool2str(elem->is_self) << "," << elem->num_comments
+			<< "," << bool2str(elem->over_18)
+			<< "," << elem->permalink << "," << 0
+			<< "," << elem->score << ",";
+
+		if (elem->kind == "t3") {
+			out << elem->self_text;
+			std::clog << elem->self_text;
 		}
+		else {
+			out << elem->body;
+			std::clog << elem->body;
+		}
+				
+		out << "," << bool2str(elem->stickied) << "," << elem->subreddit_id << "," << elem->title << "," << elem->url << std::endl;
+			std::clog << "," << bool2str(elem->stickied) << "," << elem->subreddit_id << "," << elem->title << "," << elem->url;
+
+		std::cout << "Writing: Author: " << elem->author << ", Kind: " << elem->kind << ", Score: " << elem->score << ", No comments: " << elem->num_comments << ", Permalink: " << elem->permalink << std::endl;
+		if (elem->kind == "t1" || elem->is_self)
+			std::cout << "Body: \"" << elem->body << "\"" << std::endl;
+
+		{
+			std::clog << "Writing comments" << std::endl;
+			std::fstream out(path + elem->id + ".csv", std::ios::out);
+			out << "author,body,created_utc,id,link_id,parent_id,score,stickied,subreddit_id" << std::endl;
+			for (size_t i = 0; i < elem->comments.size(); i++) {
+				auto celem = elem->comments[i];
+				out << celem->author << "," << celem->body << "," << celem->created_utc << "," << celem->id << "," << celem->link_id << ","
+					<< celem->parent_id << "," << celem->score << "," << bool2str(celem->stickied) << "," << celem->subreddit_id << std::endl;
+
+				std::clog << celem->author << "," << celem->body << "," << celem->created_utc << "," << celem->id << "," << celem->link_id << ","
+					<< celem->parent_id << "," << celem->score << "," << bool2str(celem->stickied) << "," << celem->subreddit_id << std::endl;
+
+			}
+		}
+
+		
+
 	}
 	return true;
 }
 
-State Saver::AccessSaved(std::vector<Item*>& saved)
+State Saver::AccessSaved(std::vector< Item* >& saved, int limit, std::string after, bool prev_continue, bool get_comments)
 {
 	is_mtime_up();
 	if (!is_time_up())
 	{
-		return get_saved_items(saved);
+		return get_saved_items(saved, limit, after, prev_continue, get_comments);
 	}
 	else {
 		State res = obtain_token(true);
@@ -310,9 +494,151 @@ State Saver::AccessSaved(std::vector<Item*>& saved)
 			return res;
 		}
 		else {
-			return get_saved_items(saved);
+			return get_saved_items(saved, limit, after, prev_continue, get_comments);
 		}
 	}
+}
+
+
+void Saver::download_content(std::vector<Item*> i, Sort st)
+{
+	std::clog << "Beginning to save content." << std::endl;
+	std::clog << "Sorted by enum: " << st << std::endl;
+
+	for (Item* elem : i) {
+		bool imgur_album = false;
+		if (elem->url.rfind("imgur.com/a/", 0) != std::string::npos)
+			imgur_album = true;
+
+		CURL* handle;
+		CURLcode result;
+		State s;
+		std::string data, hd, ru;
+		char* ct = nullptr;
+
+		handle = curl_easy_init();
+
+		if (handle) {
+			curl_global_init(CURL_GLOBAL_ALL);
+			curl_easy_setopt(handle, CURLOPT_URL, elem->url.c_str());
+			curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
+			curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, &writedat);
+			curl_easy_setopt(handle, CURLOPT_WRITEDATA, &data);
+			curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
+			curl_easy_setopt(handle, CURLOPT_HEADERDATA, &hd);
+#ifdef _DEBUG
+			curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
+#endif
+			result = curl_easy_perform(handle);
+			curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &s.http_state);
+			curl_easy_getinfo(handle, CURLINFO_CONTENT_TYPE, &ct);
+			QFIO(this->logpath + "content_download_" + elem->id + ".txt", hd);
+			std::string path = this->mediapath;
+			
+			if(result != CURLE_OK)
+			{
+				std::cerr << curl_easy_strerror(result) << std::endl;
+				std::cout << "Skipping: " << elem->kind <<", " << elem->id << ", " << elem->url << std::endl;
+				continue;
+			}
+			
+			switch (st)
+			{
+			case Subreddit:
+				path += elem->subreddit;
+				break;
+			case ID:
+				path += elem->id;
+				break;
+			case Title:
+				path += elem->title;
+				break;
+			default:
+				// Unsorted
+				break;
+			}
+			
+			#if __WIN32__
+				path += "\\";
+			#else
+				path += "/";
+			#endif
+
+			if (s.http_state == 200) {
+
+				std::vector<std::string> res;
+				boost::split(res, ct, boost::is_any_of("/"));
+				if (args->EnableImages) {
+					if ((res[0] == "image" || res[1] == "zip") && !fs::exists(path))
+						fs::create_directories(path);
+
+					if (res[0] == "image") {
+						std::ofstream(path + elem->id + "." + res[1], std::ios::binary) << data;
+						std::clog << "Content: " << elem->id << " stored at " << path << std::endl;
+					}
+					else if (res[1] == "zip" && imgur_album) {
+						std::ofstream(path + elem->id + ".zip", std::ios::binary) << data;
+						std::clog << "Content: " << elem->id << " stored at " << path << std::endl;
+					}
+				}
+				if (args->EnableText) {
+					if (!fs::exists(path))
+						fs::create_directories(path);
+
+					std::clog << "Outputting " << elem->id << ", " << elem->kind << std::endl;
+					if (elem->is_self && elem->kind == "t3") {
+						QFIO(path + "t3_" + elem->id + ".txt", elem->orig_self_text);
+					}
+					else if (elem->kind == "t1") {
+						QFIO(path + "t1_" + elem->id + ".txt", elem->orig_body);
+					}
+
+				}
+			}
+			else {
+				std::clog << "Message: " << s.message << ", HTTP State: " << s.http_state << std::endl;
+				std::clog << "Failed to download: " << elem->id << std::endl;
+			}
+		}
+		else {
+			std::clog << "Error: Failed to initialize CURL handle" << std::endl;
+		}
+	}
+}
+
+Saver::Saver(CMDArgs* arg) : RedditAccess(arg)
+{
+}
+
+State Saver::RetrieveComments(Item* i)
+{
+	is_mtime_up();
+	if (!is_time_up())
+	{
+		return retrieve_comments(i);
+	}
+	else {
+		State res = obtain_token(true);
+		if (res.http_state != 200) {
+			return res;
+		}
+		else {
+			return retrieve_comments(i);;
+		}
+	}
+}
+
+State Saver::AccessPosts(std::vector< Item* >& saved, int limit, bool get_comments)
+{
+	State s;
+	while (true)
+	{
+		s = AccessSaved(saved, limit, after, true, get_comments);
+		std::cout << saved.size() << std::endl;
+		if (s.http_state != 200 || (saved.size() >= (size_t)limit || after.empty()))
+			break;
+	}
+	return s;
 }
 
 State Saver::SaveToggle(std::string fullname, bool remove)
@@ -353,7 +679,7 @@ State Saver::SaveToggle(std::string fullname, bool remove)
 			curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
 			curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, writedat);
 			curl_easy_setopt(handle, CURLOPT_WRITEDATA, &json);
-			curl_easy_setopt(handle, CURLOPT_USERAGENT, this->useragent.c_str());
+			curl_easy_setopt(handle, CURLOPT_USERAGENT, Account->user_agent.c_str());
 			curl_easy_setopt(handle, CURLOPT_HEADERDATA, &rheader);
 #ifdef _DEBUG
 			curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
@@ -397,126 +723,3 @@ State Saver::SaveToggle(std::string fullname, bool remove)
 	return response;
 }
 
-State Saver::obtain_token(bool refresh)
-{
-	CURL* handle;
-	CURLcode result;
-	std::string json;
-	int responsecode;
-	State response;
-
-	handle = curl_easy_init();
-#ifdef _DEBUG
-	std::cout << "getting token..." << std::endl;
-#endif
-	if (handle)
-	{
-		CURLcode gres = curl_global_init(CURL_GLOBAL_ALL);
-		if ( gres == CURLE_OK) {
-			curl_easy_setopt(handle, CURLOPT_URL, "https://www.reddit.com/api/v1/access_token");
-			curl_easy_setopt(handle, CURLOPT_POST, 1L);
-			curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
-			curl_easy_setopt(handle, CURLOPT_WRITEDATA, &json);
-			curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, &writedat);
-			curl_easy_setopt(handle, CURLOPT_USERAGENT, this->useragent.c_str());
-			std::string userpwd = this->client_id + ":" + this->secret;
-			curl_easy_setopt(handle, CURLOPT_USERPWD, userpwd.c_str());
-
-			std::string params = "grant_type=";
-			if (refresh == false) {
-				params += "password&username=";
-				params += this->username;
-				params += "&password=";
-				params += this->password;
-				params += "&scope=";
-				params += SCOPE;
-			}
-			else {
-				params += "refresh_token&refresh_token=";
-				params += this->token;
-			}
-
-#ifdef _DEBUG
-			std::cout << params << std::endl;
-#endif
-
-
-			curl_easy_setopt(handle, CURLOPT_POSTFIELDS, params.c_str());
-#ifdef _DEBUG
-			curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
-#endif
-			result = curl_easy_perform(handle);
-			curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &responsecode);
-			curl_easy_cleanup(handle);
-			curl_global_cleanup();
-#ifdef _DEBUG
-			QFIO("token_access.txt", json);
-#endif
-
-			if (result != CURLE_OK)
-			{
-				response.http_state = responsecode;
-				response.message = curl_easy_strerror(result);
-				return response;
-			}
-			else {
-
-
-				nlohmann::json parse = nlohmann::json::parse(json);
-
-				try {
-					this->token = parse.at("access_token").get<std::string>();
-					response.http_state = responsecode;
-#ifdef _DEBUG
-					std::cout << "Token obtained: " << this->token << std::endl;
-#endif
-
-					now = std::chrono::system_clock::now();
-					std::chrono::hours one_hour(1);
-
-					then = now + one_hour;
-
-					std::time_t t = std::chrono::system_clock::to_time_t(then);
-					char stime[26];
-
-					ctime_s(stime, sizeof stime, &t);
-#ifdef _DEBUG
-					std::cout << "Token will expire at: " << stime << std::endl;
-#endif
-				}
-				catch (nlohmann::json::out_of_range&)
-				{
-					try {
-						response.message = parse.at("message").get<std::string>();
-						response.http_state = parse.at("error").get<int>();
-					}
-					catch (nlohmann::json::out_of_range&) {
-						try {
-							response.http_state = responsecode;
-							response.message = parse.at("invalid_grant").get<std::string>();
-							response.http_state = -1;
-						}
-						catch (nlohmann::json::out_of_range& e) {
-							response.message = e.what();
-							response.http_state = responsecode;
-
-						}
-					}
-				}
-			}
-		}
-		else {
-			curl_easy_cleanup(handle);
-			response.message = curl_easy_strerror(gres);
-			response.http_state = -1;
-		}
-
-
-	}
-	else {
-		response.message = "Failed to load libcurl handle!";
-		response.http_state = -1;
-		return response;
-	}
-	return response;
-}
