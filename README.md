@@ -2,14 +2,16 @@
 
 Reddit-Save-Archiver is a Reddit tool where it saves posts, comments, pictures that are in your personal saved.
 
-#Using Reddit-Save-Archiver
+## Using Reddit-Save-Archiver
 
 Before you start RSA, you need to setup your credentials from https://reddit.com/preferences/apps then apply them into settings.json and apply the necessary program parameters:
+
 ```
 {"accounts": [{"client_id":"CLIENT_ID_HERE","PASSWORD_HERE":"psw","secret":"SECRET_HERE","user_agent":"USER AGENT HERE","username":"USERNAME_HERE"}]}
 ```
 
 Run RSA without any flags if you want everything thats scanned
+
 ```
 		Flags:
 
@@ -22,16 +24,17 @@ Run RSA without any flags if you want everything thats scanned
 		-rha: Enable reddit-html-archiver output
 ```
    
-#Known Issues
+## Known Issues
 
--The -l [limit] option doesn't always work
--Running RSA without any valid settings.json will cause the program to crash or generate a segment fault
+1. The -l [limit] option doesn't always work
+2. Running RSA without any valid settings.json will cause the program to crash or generate a segment fault
 
 
-#Things I plan to do to RSA/RST
--Fix the aformentioned issues
--Add more options for directory structure E.g /Sub/Post_tite/[Content]
--Add things like author, permalink and etc to the text files
--Create GUI for RSA
--Create a better CMD args scanner or check if you can make it better
--Implement the rest of the ways for directory structure
+## Things I plan to do to RSA/RST
+
+1. Fix the aformentioned issues
+2. Add more options for directory structure E.g /Sub/Post_tite/[Content]
+2. Add things like author, permalink and etc to the text files
+3. Create GUI for RSA
+4. Create a better CMD args scanner or check if you can make it better
+5. Implement the rest of the ways for directory structure
