@@ -5,33 +5,19 @@
 #include <cstdlib>
 
 using namespace std;
-// TODO: Add a seperate member to item so it holds the original text with newlines, commas, etc. So they're prepped for output
-// TODO: Add option to not download images, but output the URLs into a text file
 // TODO: Add more options for directory structure E.g /Sub/Post_tite/[Content]
 // TODO: Add things like author, permalink and etc to the text files
 // TODO: Create GUI for RSA
 // TODO: Create a better CMD args scanner or check if you can make it better
+// TODO: Implement the rest of the ways for directory structure
 
-/*
-		Flags:
-
-		-i: Only images
-		-a [ACCOUNT]: Load specific account
-		-t: Only text
-		-e: Get everything
-		-dc: Disable comments
-		-l [limit]: Sets the limit of the number of comments, the default being 250 items
-		-rha: Enable reddit-html-archiver output
-		-v: Get version
-
-	*/
 CMDArgs* scan_cmd(int argc, char* argv[])	
 {
 
 	/*
 		Flags:
 
-		-nc: No comments
+		-dc: No comments
 		-i: Disable Images
 		-a [ACCOUNT]: Load specific account
 		-t: Disable Text
