@@ -4,26 +4,26 @@
 void RedditAccess::init_logs() {
 
 	time_t t;
-	struct tm* timeinfo = nullptr;
-
 	time(&t);
-#if defined(_MSC_VER)
-	localtime_s(&timeinfo, &t);
-#elif (defined(__MINGW64__) || defined(__MINGW32__))
-	timeinfo = localtime(&t);
-#else 
-	timeinfo = localtime(&t);
-#endif
 	char datestr[7];
-
+	
+#if defined(_MSC_VER)
+	struct tm timeinfo;
+	localtime_s(&timeinfo, &t);
+	std::strftime(datestr, sizeof(datestr), "%Y_%m_%d ", &timeinfo);
+#else 
+	struct tm* timeinfo = nullptr
+	timeinfo = localtime(&t);
 	std::strftime(datestr, sizeof(datestr), "%Y_%m_%d ", timeinfo);
+#endif
+	
 
 #ifdef __WIN32__
 	this->logpath = "logs\\" + std::string(datestr) + "\\" + Account->username + "\\";
 	this->mediapath = "media\\" + std::string(datestr) + "\\" + Account->username + "\\";
 #else
-	this->logpath = std::string(fs::current_path()) + "/logs/" + std::string(datestr) + "/" + Account->username + "/";
-	this->mediapath = std::string(fs::current_path()) + "/media/" + std::string(datestr) + "/" + Account->username + "/";
+	this->logpath = std::string(fs::current_path().u8string()) + "/logs/" + std::string(datestr) + "/" + Account->username + "/";
+	this->mediapath = std::string(fs::current_path().u8string()) + "/media/" + std::string(datestr) + "/" + Account->username + "/";
 #endif
 	std::clog << "Current log to be generated at: " << this->logpath << std::endl;
 
