@@ -16,7 +16,7 @@ cmake -G "COMPILER_HERE"
 
 ## Using RSA/RST
 
-Before you start RSA, you need to setup your credentials from https://www.reddit.com/prefs/apps/ then apply them into settings.json and apply the necessary program parameters:
+Before you start RSA, you need to setup your credentials from https://www.reddit.com/prefs/apps/ , apply them into settings.json and apply then the necessary program parameters:
 
 ```
 {"accounts": [{"client_id":"CLIENT_ID_HERE","PASSWORD_HERE":"psw","secret":"SECRET_HERE","user_agent":"USER AGENT HERE","username":"USERNAME_HERE"}]}
