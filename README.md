@@ -13,6 +13,7 @@ cmake -G "COMPILER_HERE"
 ### RSA depends on:
 1. Boost's headers
 2. Libcurl
+3. nlohmann's json
 
 ## Using RSA/RST
 
