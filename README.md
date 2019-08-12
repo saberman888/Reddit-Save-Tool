@@ -22,3 +22,16 @@ Run RSA without any flags if you want everything thats scanned
 		-rha: Enable reddit-html-archiver output
 ```
    
+#Known Issues
+
+-The -l [limit] option doesn't always work
+-Running RSA without any valid settings.json will cause the program to crash or generate a segment fault
+
+
+#Things I plan to do to RSA/RST
+-Fix the aformentioned issues
+-Add more options for directory structure E.g /Sub/Post_tite/[Content]
+-Add things like author, permalink and etc to the text files
+-Create GUI for RSA
+-Create a better CMD args scanner or check if you can make it better
+-Implement the rest of the ways for directory structure
