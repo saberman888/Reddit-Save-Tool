@@ -33,7 +33,7 @@ Run RSA without any flags if you want everything thats scanned
 		-t: Disable Text
 		-l [limit]: Sets the limit of the number of comments, the default being 250 items
 		-gt: Disable text/self posts and direct save comments - not implemented yet
-		-rha: Enable reddit-html-archiver output
+		-RHA: Enable reddit-html-archiver output
 ```
    
 ## Known Issues
