@@ -40,7 +40,7 @@ Run RSA without any flags if you want everything thats scanned
 
 1. The -l [limit] option doesn't always work
 2. Running RSA without any valid settings.json will cause the program to crash or generate a segment fault
-3. Not really an issues/bug, but RSA doesn't support downloading video, but I want to try to support it
+3. Not really an issues/bug, but RSA doesn't support downloading video, but I want to try to support it in the future
 4. The -RHA option doesn't always work when processing a large scale of items, but I could be wrong.
 
 
