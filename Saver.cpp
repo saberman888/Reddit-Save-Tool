@@ -64,12 +64,6 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, int limit, std::string
 				response.message = curl_easy_strerror(result);
 			}
 			else {
-				/*nlohmann::json root = nlohmann::json::parse(jresponse);
-				JQA jqa(root);
-				auto kind = jqa.access("/data/after");
-				if (kind.is_string()) {
-					std::cout << "Kind: " << kind.get<std::string>() << std::endl;
-				}*/
 
 				std::clog << "Attempting to parse json structures for saved items" << std::endl;
 				try {
@@ -79,7 +73,6 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, int limit, std::string
 						this->after = "";
 					else
 						this->after = root.at("data").at("after").get<std::string>();
-						//extract_val<std::string>(root.at("data").at("after"), after);
 
 #ifdef _DEBUG
 					std::cout << "After: " << this->after << std::endl;
@@ -87,15 +80,13 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, int limit, std::string
 
 					std::clog << "The after is: " << this->after << std::endl;
 
-					int csize = limit;
-					if (csize == 1000)
-						csize = children.size();
-
-					for(int j = 0; j < csize; j++)
+					for(int j = 0; j < children.size(); j++)
 					{
 						auto& elem = children[j];
 						Item* it = new Item;
-
+#ifdef _SINGLE_JSON_DUMP
+						QFIO(logpath + "single_id_dump_" + std::to_string(j) +".json", elem.dump(4));
+#endif
 						it->kind = elem.at("kind").get<std::string>();
 
 						if (it->kind == "t1") {
@@ -207,7 +198,7 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, int limit, std::string
 						if (it->IsPossibleImage())
 							images += 1;
 
-						if (j == csize)
+						if (j == children.size())
 							break;
 					}
 
