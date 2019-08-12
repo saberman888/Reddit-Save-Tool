@@ -1,8 +1,20 @@
-# Reddit-Save-Tool
+# Reddit-Save-Tool/Reddit-Save-Archiver
 
 Reddit-Save-Archiver is a Reddit tool where it saves posts, comments, pictures that are in your personal saved.
 
-## Using Reddit-Save-Archiver
+## Building RSA/RST
+
+Building RSA is relatively simple by just configuring cmake to your preffered compiler/platform and compiling it through the generated Makefile:
+
+```
+cmake -G "COMPILER_HERE"
+```
+
+### RSA depends on:
+1. Boost's headers
+2. Libcurl
+
+## Using RSA/RST
 
 Before you start RSA, you need to setup your credentials from https://reddit.com/preferences/apps then apply them into settings.json and apply the necessary program parameters:
 
