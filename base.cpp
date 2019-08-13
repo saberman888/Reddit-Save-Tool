@@ -35,4 +35,4 @@ bool _Item::IsPossibleImage()
 	return false;
 }
 
-CMDArgs::CMDArgs() : EnableImages(true), DisableComments(false), EnableText(true), RHA(false), limit(250), username("") {}
+CMDArgs::CMDArgs() : EnableImages(true), DisableComments(false), EnableText(true), RHA(false), limit(1000), username("") {}
