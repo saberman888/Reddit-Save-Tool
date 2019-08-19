@@ -5,16 +5,16 @@ void RedditAccess::init_logs() {
 
 	time_t t;
 	time(&t);
-	char datestr[7];
+	char datestr[11];
 	
 #if defined(_MSC_VER)
 	struct tm timeinfo;
 	localtime_s(&timeinfo, &t);
-	std::strftime(datestr, sizeof(datestr), "%Y_%m_%d ", &timeinfo);
+	std::strftime(datestr, sizeof(datestr), "%Y-%m-%d ", &timeinfo);
 #else 
-	struct tm* timeinfo = nullptr
+	struct tm* timeinfo = nullptr;
 	timeinfo = localtime(&t);
-	std::strftime(datestr, sizeof(datestr), "%Y_%m_%d ", timeinfo);
+	std::strftime(datestr, sizeof(datestr), "%Y-%m-%d ", timeinfo);
 #endif
 	
 
@@ -30,7 +30,6 @@ void RedditAccess::init_logs() {
 	fs::create_directories(logpath);
 
 	log = new std::fstream(logpath + Account->username + "_" + datestr + " info.log", std::ios::out);
-
 	old_rdbuf = std::clog.rdbuf();
 	std::clog.rdbuf(log->rdbuf());
 
@@ -38,15 +37,16 @@ void RedditAccess::init_logs() {
 	std::clog << "Beginning log." << std::endl;
 }
 
-RedditAccess::RedditAccess(CMDArgs* arg) : args(arg)
+RedditAccess::RedditAccess(CMDArgs* arg) : args(arg), log(nullptr), is_logged_in(false)
 {
-	// TODO: Give RSA it's own general log
 }
 
 RedditAccess::~RedditAccess()
 {
-	std::clog.rdbuf(old_rdbuf);
-	log->close();
+	if(is_logged_in){
+		std::clog.rdbuf(old_rdbuf);
+		log->close();
+	}
 	delete args;
 }
 
@@ -59,8 +59,9 @@ bool RedditAccess::load_login_info()
 		nlohmann::json creds = { {"accounts", nullptr } };
 		creds["accounts"] = nlohmann::json::array({ {"client_id" , "cid" }, {"secret","secret"}, {"username" , "user"}, {"password","pass"}, {"user_agent", "ua"} });
 		info << creds.dump(4);
+		std::cout << "Could not find settings.json" << std::endl;
 		std::clog << "Recreating settings.json" << std::endl;
-		return false;
+		return success;
 	}
 
 
@@ -110,7 +111,7 @@ bool RedditAccess::load_login_info()
 			this->Account = accounts[0];
 			std::clog << "Account: " << this->Account->username << " loaded." << std::endl;
 		}
-
+		is_logged_in = true;
 		success = true;
 	}
 	catch (nlohmann::json::exception& e) {
@@ -263,6 +264,7 @@ void RedditAccess::is_mtime_up()
 			// stall
 
 			if (mnow >= mthen){
+				std::clog << "Minute clock is reset" << std::endl;
 				restart_minute_clock(); break;
 			}
 		}
@@ -279,7 +281,7 @@ void RedditAccess::tick()
 	if (now < then) {
 		this->request_done_in_current_minute += 1;
 	}
-
+	
 	std::clog << "Requests done: " << requests_done << std::endl;
 	std::clog << "Requests done in current minute: " << this->request_done_in_current_minute << std::endl;
 }
