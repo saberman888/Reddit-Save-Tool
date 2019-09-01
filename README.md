@@ -35,6 +35,8 @@ Run RSA without any flags if you want everything thats scanned
 		-l [limit]: Sets the limit of the number of comments, the default being 250 items
 		-gt: Disable text/self posts and direct save comments - not implemented yet
 		-RHA: Enable reddit-html-archiver output
+		-whl/-whitelist [sub]: Whitelist a paticular sub and block the others
+		-bl/-blacklist [sub]: Black list a paticular sub
 ```
    
 ## Known Issues / Notes
