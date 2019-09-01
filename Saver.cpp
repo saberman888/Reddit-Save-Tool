@@ -2,7 +2,7 @@
 #include <iostream>
 
 
-State Saver::get_saved_items(std::vector< Item* >& sitem, int limit, std::string after, bool prev_continue, bool get_comments)
+State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after, bool prev_continue, bool get_comments)
 {
 	std::clog << "Getting saved items" << std::endl;
 	CURL *handle;
@@ -29,11 +29,11 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, int limit, std::string
 		}
 		else {
 			std::string url = "https://oauth.reddit.com/user/";
-			url += Account->username + "/saved/?limit=" + std::to_string(limit);
+			url += Account->username + "/saved/?limit=" + std::to_string(100);
 			if (prev_continue)
 				url += "&after=" + after;
 
-			std::clog << "URL has been setup with a limit of " << std::to_string(limit) << " and an after of " << after << std::endl;
+			std::clog << "URL has been setup with an after of " << after << std::endl;
 
 
 			curl_easy_setopt(handle, CURLOPT_URL, url.c_str());
@@ -471,12 +471,12 @@ bool Saver::write_links(std::vector<Item*> src, std::vector<std::string> subfilt
 	return true;
 }
 
-State Saver::AccessSaved(std::vector< Item* >& saved, int limit, std::string after, bool prev_continue, bool get_comments)
+State Saver::AccessSaved(std::vector< Item* >& saved, std::string after, bool prev_continue, bool get_comments)
 {
 	is_mtime_up();
 	if (!is_time_up())
 	{
-		return get_saved_items(saved, limit, after, prev_continue, get_comments);
+		return get_saved_items(saved, after, prev_continue, get_comments);
 	}
 	else {
 		State res = obtain_token(true);
@@ -485,7 +485,7 @@ State Saver::AccessSaved(std::vector< Item* >& saved, int limit, std::string aft
 			return res;
 		}
 		else {
-			return get_saved_items(saved, limit, after, prev_continue, get_comments);
+			return get_saved_items(saved, after, prev_continue, get_comments);
 		}
 	}
 }
@@ -496,8 +496,22 @@ void Saver::download_content(std::vector<Item*> i, Sort st)
 	std::clog << "Beginning to save content." << std::endl;
 	std::clog << "Sorted by enum: " << st << std::endl;
 
-	for (Item* elem : i) {
+	for (int j = 0; j < args->limit; j++) {
+		Item *elem = i[j];
 		bool imgur_album = false;
+		
+		if(std::vector<std::string>::iterator whitelist_it = std::find(std::begin(args->whitelist), std::end(args->whitelist), elem->subreddit); (whitelist_it == std::end(args->whitelist)) && (!args->whitelist.empty()))
+		{
+			std::clog << "Item doesn't match whitelist: " << elem->kind <<", " << elem->id << ", " << elem->url << ", " << elem->subreddit << std::endl;
+			continue;
+		}
+		
+		if(std::vector<std::string>::iterator blacklist_it = std::find(std::begin(args->blacklist), std::end(args->blacklist), elem->subreddit); blacklist_it != std::end(args->blacklist))
+		{
+			std::clog << "Skipping: " << elem->kind <<", " << elem->id << ", " << elem->url << ", " << elem->subreddit << std::endl;
+			continue;
+		}
+		
 		if (elem->url.rfind("imgur.com/a/", 0) != std::string::npos)
 			imgur_album = true;
 
@@ -619,16 +633,16 @@ State Saver::RetrieveComments(Item* i)
 	}
 }
 
-State Saver::AccessPosts(std::vector< Item* >& saved, int limit, bool get_comments)
+State Saver::AccessPosts(std::vector< Item* >& saved, bool get_comments)
 {
 	State s;
-	while (true)
+	for(int i = 0; i < 1000; i += 100)
 	{
-		s = AccessSaved(saved, limit, after, true, get_comments);
-		std::cout << saved.size() << std::endl;
-		if (s.http_state != 200 || (saved.size() >= (size_t)limit || after.empty()))
+		s = AccessSaved(saved, after, true, get_comments);
+		if(s.http_state != 200)
 			break;
 	}
+	std::cout << "Total saved items: " << saved.size() << std::endl;
 	return s;
 }
 
@@ -713,4 +727,5 @@ State Saver::SaveToggle(std::string fullname, bool remove)
 	}
 	return response;
 }
+
 
