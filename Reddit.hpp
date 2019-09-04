@@ -13,7 +13,6 @@ namespace fs = std::filesystem;
 #include "nlohmann/json.hpp"
 #include <fstream>
 #include "curl/curl.h"
-#include <memory>
 
 class RedditAccess {
 public:
@@ -36,6 +35,7 @@ public:
 	std::string logpath, mediapath;
 	std::streambuf* old_rdbuf;
 	CMDArgs* args;
+	bool is_logged_in;
 	/*
 		All the request_done and chrono related variables
 		keep track of how many requests are being done.
