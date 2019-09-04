@@ -23,7 +23,7 @@ endif()
 add_executable(reddit-save-archiver base.cpp Reddit.cpp Saver.cpp Source.cpp)
 
 find_package(Boost REQUIRED)
-find_package(curl REQUIRED)
+find_package(CURL REQUIRED)
 include_directories(${BOOST_INCLUDE_DIRS})
 
 if(MSVC)
