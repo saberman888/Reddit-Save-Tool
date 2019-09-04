@@ -78,6 +78,7 @@ public:
 	bool EnableImages, EnableText, DisableComments, RHA;
 	int limit;
 	std::string username;
+	std::vector<std::string> whitelist, blacklist;
 };
 
 struct creds {
