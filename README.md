@@ -28,15 +28,16 @@ Run RSA without any flags if you want everything thats scanned
 ```
 		Flags:
 
-		-dc: Disable comments from any of the self/link posts
 		-i: Disable Images
+		-dc: Disable comments
 		-a [ACCOUNT]: Load a specific account
 		-t: Disable Text
-		-l [limit]: Sets the limit of the number of comments, the default being 250 items
-		-gt: Disable text/self posts and direct save comments - not implemented yet
+		-l [limit]: Sets the limit of the number of comments, the default being 1000 items
 		-RHA: Enable reddit-html-archiver output
 		-whl/-whitelist [sub]: Whitelist a paticular sub and block the others
 		-bl/-blacklist [sub]: Black list a paticular sub
+		-h/-help: help
+		-v/--version: Version
 ```
    
 ## Known Issues / Notes
