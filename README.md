@@ -37,7 +37,7 @@ Run RSA without any flags if you want everything thats scanned
 		-whl/-whitelist [sub]: Whitelist a paticular sub and block the others
 		-bl/-blacklist [sub]: Black list a paticular sub
 		-h/-help: help
-		-v/--version: Version
+		-v/-version: Version
 ```
    
 ## Known Issues / Notes
