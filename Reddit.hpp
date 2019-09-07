@@ -16,7 +16,7 @@ namespace fs = std::filesystem;
 
 class RedditAccess {
 public:
-	RedditAccess(CMDArgs* arg);
+	RedditAccess();
 	~RedditAccess();
 	void init_logs();
 	bool load_login_info();
@@ -28,13 +28,13 @@ public:
 	struct creds* Account;
 	// After stores the id for the next page of saved content
 	std::string after;
+	CMDArgs args;
 
 	State obtain_token(bool refresh);
 	std::string token; // where our access token goes
 	std::fstream* log;
 	std::string logpath, mediapath;
 	std::streambuf* old_rdbuf;
-	CMDArgs* args;
 	bool is_logged_in;
 	/*
 		All the request_done and chrono related variables
@@ -74,3 +74,4 @@ public:
 
 
 };
+
