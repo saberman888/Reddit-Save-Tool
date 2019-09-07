@@ -2,7 +2,7 @@
 #include <iostream>
 
 
-State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after, bool prev_continue, bool get_comments)
+State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after, bool get_comments)
 {
 	std::clog << "Getting saved items" << std::endl;
 	CURL *handle;
@@ -30,8 +30,7 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after, boo
 		else {
 			std::string url = "https://oauth.reddit.com/user/";
 			url += Account->username + "/saved/?limit=" + std::to_string(100);
-			if (prev_continue)
-				url += "&after=" + after;
+			url += "&after=" + after;
 
 			std::clog << "URL has been setup with an after of " << after << std::endl;
 
@@ -91,7 +90,6 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after, boo
 
 						if (it->kind == "t1") {
 							std::clog << "Item is a comment" << std::endl;
-							comments += 1;
 							it->fullname = elem.at("data").at("link_id").get<std::string>();
 							it->url = elem.at("data").at("link_url").get<std::string>();
 							it->is_self = false;
@@ -182,24 +180,6 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after, boo
 						sitem.push_back(it);
 						std::clog << it->permalink << std::endl;
 						std::cout << it->permalink << std::endl;
-
-						// before leaving the scope to collect some stats
-						if (it->is_self)
-							self_posts += 1;
-						else
-							links += 1;
-
-						if (it->kind == "t1")
-							comments += 1;
-
-						if (it->IsVideo())
-							videos += 1;
-
-						if (it->IsPossibleImage())
-							images += 1;
-
-						if (j == children.size())
-							break;
 					}
 
 				}
@@ -367,8 +347,6 @@ State Saver::retrieve_comments(Item* i)
 	return response;
 
 }
-
-
 bool Saver::write_links(std::vector<Item*> src, std::vector<std::string> subfilter)
 {
 	std::clog << "Writing links into CSV" << std::endl;
@@ -471,42 +449,23 @@ bool Saver::write_links(std::vector<Item*> src, std::vector<std::string> subfilt
 	return true;
 }
 
-State Saver::AccessSaved(std::vector< Item* >& saved, std::string after, bool prev_continue, bool get_comments)
-{
-	is_mtime_up();
-	if (!is_time_up())
-	{
-		return get_saved_items(saved, after, prev_continue, get_comments);
-	}
-	else {
-		State res = obtain_token(true);
-		if (res.http_state != 200)
-		{
-			return res;
-		}
-		else {
-			return get_saved_items(saved, after, prev_continue, get_comments);
-		}
-	}
-}
-
 
 void Saver::download_content(std::vector<Item*> i, Sort st)
 {
 	std::clog << "Beginning to save content." << std::endl;
 	std::clog << "Sorted by enum: " << st << std::endl;
 
-	for (int j = 0; j < args->limit; j++) {
+	for (int j = 0; j < args.limit; j++) {
 		Item *elem = i[j];
 		bool imgur_album = false;
 		
-		if(std::vector<std::string>::iterator whitelist_it = std::find(std::begin(args->whitelist), std::end(args->whitelist), elem->subreddit); (whitelist_it == std::end(args->whitelist)) && (!args->whitelist.empty()))
+		if(std::vector<std::string>::iterator whitelist_it = std::find(std::begin(args.whitelist), std::end(args.whitelist), elem->subreddit); (whitelist_it == std::end(args.whitelist)) && (!args.whitelist.empty()))
 		{
 			std::clog << "Item doesn't match whitelist: " << elem->kind <<", " << elem->id << ", " << elem->url << ", " << elem->subreddit << std::endl;
 			continue;
 		}
 		
-		if(std::vector<std::string>::iterator blacklist_it = std::find(std::begin(args->blacklist), std::end(args->blacklist), elem->subreddit); blacklist_it != std::end(args->blacklist))
+		if(std::vector<std::string>::iterator blacklist_it = std::find(std::begin(args.blacklist), std::end(args.blacklist), elem->subreddit); blacklist_it != std::end(args.blacklist))
 		{
 			std::clog << "Skipping: " << elem->kind <<", " << elem->id << ", " << elem->url << ", " << elem->subreddit << std::endl;
 			continue;
@@ -573,7 +532,7 @@ void Saver::download_content(std::vector<Item*> i, Sort st)
 
 				std::vector<std::string> res;
 				boost::split(res, ct, boost::is_any_of("/"));
-				if (args->EnableImages) {
+				if (args.EnableImages) {
 					if ((res[0] == "image" || res[1] == "zip") && !fs::exists(path))
 						fs::create_directories(path);
 
@@ -586,7 +545,7 @@ void Saver::download_content(std::vector<Item*> i, Sort st)
 						std::clog << "Content: " << elem->id << " stored at " << path << std::endl;
 					}
 				}
-				if (args->EnableText) {
+				if (args.EnableText) {
 					if (!fs::exists(path))
 						fs::create_directories(path);
 
@@ -611,8 +570,99 @@ void Saver::download_content(std::vector<Item*> i, Sort st)
 	}
 }
 
-Saver::Saver(CMDArgs* arg) : RedditAccess(arg)
+Saver::Saver() : RedditAccess()
 {
+}
+
+bool Saver::scan_cmd(int argc, char* argv[])
+{
+	for (int i = 1; i < argc; i++)
+	{
+		std::string arg = argv[i];
+		if (arg == "-i") {
+			args.EnableImages = false;
+		}
+		else if (arg == "-t") {
+			args.EnableText = false;
+		}
+		else if (arg == "-a") {
+			if (i + 1 >= argc) {
+				std::cout << "Error: Secondary argument for -a option not present" << std::endl;
+				return false;
+			}
+			args.username = argv[i + 1];
+			i++;
+		}
+		else if (arg == "-dc") {
+			args.DisableComments = true;
+		}
+		else if (arg == "-rha") {
+			args.RHA = true;
+		}
+		else if (arg == "-h" || arg == "--help") {
+			std::cout << "		Flags:" << std::endl
+
+				<< "- i: Only images" << std::endl
+				<< "a[ACCOUNT] : Load specific account" << std::endl
+				<< "t : Only text" << std::endl
+				<< "e : Get everything" << std::endl
+				<< "dc : Disable comments" << std::endl
+				<< "l[limit] : Sets the limit of the number of comments, the default being 250 items" << std::endl
+				<< "rha : Enable reddit - html - archiver output" << std::endl
+				<< "v / --version : Get version" << std::endl
+				<< "whl / -whitelist[sub, sub] - whitelists a patricular sub" << std::endl
+				<< "bl / -blacklist[sub, sub] - blackists a paticular sub" << std::endl;
+			return false;
+		}
+		else if (arg == "-v" || arg == "--version") {
+#if defined(VERSION)
+			std::cout << VERSION << std::endl;
+#else
+			std::cout << "No set version" << std::endl;
+#endif
+		}
+		else if (arg == "-l") {
+			if (i + 1 >= argc) {
+				std::cout << "Secondary argument for -l option not present" << std::endl;
+				return false;
+			}
+
+			args.limit = atoi(argv[i + 1]);
+			i++;
+		}
+		else if (arg == "-whitelist" || arg == "-whl") {
+			if (i + 1 >= argc) {
+				std::cout << "Second argument for -whitelist/-whl options not present" << std::endl;
+			}
+			if (std::string comma_check = argv[i + 1]; comma_check.rfind(",") != std::string::npos) {
+
+				boost::split(args.whitelist, argv[i + 1], boost::is_any_of(","));
+			}
+			else {
+				args.whitelist.push_back(argv[i + 1]);
+			}
+			i++;
+		}
+		else if (arg == "-blacklist" || arg == "-bl") {
+			if (i + 1 >= argc) {
+				std::cout << "Second argument for -blacklist/-bl options not present" << std::endl;
+			}
+			if (std::string comma_check = argv[i + 1]; comma_check.rfind(",") != std::string::npos) {
+
+				boost::split(args.blacklist, argv[i + 1], boost::algorithm::is_any_of(","));
+			}
+			else {
+				args.blacklist.push_back(argv[i + 1]);
+			}
+			i++;
+		}
+		else {
+			std::cerr << "Error, unkown command: " << argv[i] << std::endl;
+			std::cout << "Try -h or --help for a list of commands" << std::endl;
+			return false;
+		}
+	}
+	return true;
 }
 
 State Saver::RetrieveComments(Item* i)
@@ -633,12 +683,26 @@ State Saver::RetrieveComments(Item* i)
 	}
 }
 
-State Saver::AccessPosts(std::vector< Item* >& saved, bool get_comments)
+State Saver::AccessPosts(std::vector< Item* >& saved)
 {
 	State s;
 	for(int i = 0; i < 1000; i += 100)
 	{
-		s = AccessSaved(saved, after, true, get_comments);
+		is_mtime_up();
+		if (!is_time_up())
+		{
+			s = get_saved_items(saved, after, args.DisableComments);
+		}
+		else {
+			State res = obtain_token(true);
+			if (res.http_state != 200)
+			{
+				return res;
+			}
+			else {
+				s = get_saved_items(saved, after, args.DisableComments);
+			}
+		}
 		if(s.http_state != 200)
 			break;
 	}
@@ -646,86 +710,6 @@ State Saver::AccessPosts(std::vector< Item* >& saved, bool get_comments)
 	return s;
 }
 
-State Saver::SaveToggle(std::string fullname, bool remove)
-{
-	CURL* handle;
-	CURLcode result;
-	std::string json;
-	int responsecode = 0;
-	State response;
-	std::string rheader;
 
-	handle = curl_easy_init();
-	if (handle)
-	{
-#ifdef _DEBUG
-		std::cout << "using save toggle" << std::endl;
-#endif
-		struct curl_slist* header = nullptr;
-		std::string sheader = "Authorization: bearer ";
-		sheader += this->token;
-
-		header = curl_slist_append(header, sheader.c_str());
-		CURLcode gres = curl_global_init(CURL_GLOBAL_ALL);
-		if ( gres == CURLE_OK) {
-			if (remove == false) {
-				curl_easy_setopt(handle, CURLOPT_URL, "https://oauth.reddit.com/api/save");
-			}
-			else {
-				curl_easy_setopt(handle, CURLOPT_URL, "https://oauth.reddit.com/api/unsave");
-			}
-			curl_easy_setopt(handle, CURLOPT_POST, 1L);
-			curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header);
-
-			std::string params = "id=";
-			params += fullname;
-
-			curl_easy_setopt(handle, CURLOPT_POSTFIELDS, params.c_str());
-			curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
-			curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, writedat);
-			curl_easy_setopt(handle, CURLOPT_WRITEDATA, &json);
-			curl_easy_setopt(handle, CURLOPT_USERAGENT, Account->user_agent.c_str());
-			curl_easy_setopt(handle, CURLOPT_HEADERDATA, &rheader);
-#ifdef _DEBUG
-			curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
-#endif
-
-			result = curl_easy_perform(handle);
-			curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &responsecode);
-			curl_easy_cleanup(handle);
-			curl_global_cleanup();
-
-#ifdef _DEBUG
-			QFIO("savetoggle_data.txt", json);
-#endif
-
-#ifdef _DEBUG
-			QFIO("savetoggle_header_data.txt", rheader);
-#endif
-			if (result != CURLE_OK)
-			{
-				response.http_state = responsecode;
-				response.message = curl_easy_strerror(result);
-
-			}
-			else {
-
-				response.message = "";
-				response.http_state = responsecode;
-			}
-		}
-		else {
-			curl_easy_cleanup(handle);
-			response.message = curl_easy_strerror(gres);
-			response.http_state = -1;
-		}
-
-	}
-	else {
-		response.http_state = -1;
-		response.message = "Failed load libcurl handle!";
-	}
-	return response;
-}
 
 
