@@ -19,21 +19,26 @@ if(DEBUG OR SINGLE_ID_DUMP)
 else(RELEASE)
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/release)
 endif()
+add_compile_options(-DVERSION="2019.9.7")
 
 add_executable(reddit-save-archiver base.cpp Reddit.cpp Saver.cpp Source.cpp)
 
 find_package(Boost REQUIRED)
 find_package(CURL REQUIRED)
+
 include_directories(${BOOST_INCLUDE_DIRS})
 
-if(MSVC)
-	find_library(LIBRARIES LIBCURL lib)
+if("${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC")
+	set(LIBRARIES LIBCURL)
 
-elseif(MINGW OR MSYS OR GNU)
-	find_library(LIBRARIES libcurl stdc++fs lib)
+elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "MINGW")
+	set(LIBRARIES curl stdc++fs)
 endif()
 
 target_link_libraries(reddit-save-archiver LINK_PUBLIC ${LIBRARIES})
+
+
+
 
 
 
