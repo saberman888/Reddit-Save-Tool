@@ -600,7 +600,7 @@ bool Saver::scan_cmd(int argc, char* argv[])
 			args.RHA = true;
 		}
 		else if (arg == "-h" || arg == "--help") {
-			std::cout << "		Flags:" << std::endl
+			std::cout << "	Flags:" << std::endl
 
 				<< "- i: Only images" << std::endl
 				<< "a[ACCOUNT] : Load specific account" << std::endl
@@ -614,12 +614,13 @@ bool Saver::scan_cmd(int argc, char* argv[])
 				<< "bl / -blacklist[sub, sub] - blackists a paticular sub" << std::endl;
 			return false;
 		}
-		else if (arg == "-v" || arg == "--version") {
+		else if (arg == "-v" || arg == "-version") {
 #if defined(VERSION)
 			std::cout << VERSION << std::endl;
 #else
 			std::cout << "No set version" << std::endl;
 #endif
+			return false;
 		}
 		else if (arg == "-l") {
 			if (i + 1 >= argc) {
@@ -709,7 +710,6 @@ State Saver::AccessPosts(std::vector< Item* >& saved)
 	std::cout << "Total saved items: " << saved.size() << std::endl;
 	return s;
 }
-
 
 
 
