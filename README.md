@@ -41,9 +41,8 @@ Run RSA without any flags if you want everything thats scanned
    
 ## Known Issues / Notes
 
-1. The -l [limit] option doesn't always work
-2. Not really an issues/bug, but RSA doesn't support downloading video, but I want to try to support it in the future
-3. The -RHA option doesn't always work when processing a large scale of items, but I could be wrong.
+1. Not really an issues/bug, but RSA doesn't support downloading video, but I want to try to support it in the future
+2. The -RHA option doesn't always work when processing a large scale of items, but I could be wrong.
 
 ## Things I plan to do to RSA/RST
 
@@ -51,5 +50,4 @@ Run RSA without any flags if you want everything thats scanned
 2. Add more options for directory structure E.g /Sub/Post_tite/[Content]
 2. Add things like author, permalink and etc to the text files
 3. Create GUI for RSA
-4. Create a better CMD args scanner or check if you can make it better
-5. Implement the rest of the ways for directory structure
+4. Implement the rest of the ways for directory structure
