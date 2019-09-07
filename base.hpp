@@ -42,8 +42,6 @@ inline std::string bool2str(bool x) {
 
 size_t writedat(char* buffer, size_t size, size_t nmemb, std::string& src);
 
-std::vector<std::string> split_string(std::string src, const char delimeter);
-
 typedef struct _State
 {
 	int http_state;
