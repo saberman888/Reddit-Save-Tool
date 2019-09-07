@@ -37,7 +37,7 @@ void RedditAccess::init_logs() {
 	std::clog << "Beginning log." << std::endl;
 }
 
-RedditAccess::RedditAccess(CMDArgs* arg) : args(arg), log(nullptr), is_logged_in(false)
+RedditAccess::RedditAccess() : log(nullptr), is_logged_in(false)
 {
 }
 
@@ -47,7 +47,6 @@ RedditAccess::~RedditAccess()
 		std::clog.rdbuf(old_rdbuf);
 		log->close();
 	}
-	delete args;
 }
 
 bool RedditAccess::load_login_info()
@@ -69,7 +68,7 @@ bool RedditAccess::load_login_info()
 
 	try {
 		info >> root;
-		int acc_size = root.at("accounts").size();
+		size_t acc_size = root.at("accounts").size();
 		for (nlohmann::json& elem : root.at("accounts"))
 		{
 			try {
@@ -87,19 +86,18 @@ bool RedditAccess::load_login_info()
 				std::clog << e.what() << std::endl;
 			}
 		}
-		if (args->username != "") {
-			//std::clog << "Checking if " << args->username << " is in settings.json" << std::endl;
+		if (args.username != "") {
 			int index = 0;
 			bool found = false;
 			for (int i = 0; i < acc_size; i++) {
-				if (std::string usr = root.at("accounts")[i].at("username").get<std::string>(); usr == args->username){
+				if (std::string usr = root.at("accounts")[i].at("username").get<std::string>(); usr == args.username){
 					index = i; 
 					found = true;
 				}
 			}
 
 			if (!found) {
-				std::clog << "Username for: " << args->username << " is not in settings.json" << std::endl;
+				std::clog << "Username for: " << args.username << " is not in settings.json" << std::endl;
 				std::clog << "No username provided, using account of index: 0" << std::endl;
 				this->Account = accounts[index];
 				return false;
