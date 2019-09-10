@@ -23,6 +23,7 @@ using namespace std;
 		-v/--version: Get version
 		-whl/-whitelist [sub,sub] - whitelists a patricular sub
 		-bl/-blacklist [sub,sub] - blackists a paticular sub
+		-sb/sort_by [sort] - sort media
 
 	*/
 
@@ -55,7 +56,7 @@ int main(int argc, char* argv[])
 	std::cout << "Processed: " << iv.size() << std::endl;
 	if (s.args.EnableText || s.args.EnableImages) {
 		std::cout << "Beginning to download content" << std::endl;
-		s.download_content(iv, Subreddit); // TODO: Add sorting options to the commandline arguments
+		s.download_content(iv); // TODO: Add sorting options to the commandline arguments
 	}
 
 	if (s.args.RHA) {
