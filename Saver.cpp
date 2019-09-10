@@ -360,21 +360,13 @@ bool Saver::write_links(std::vector<Item*> src, std::vector<std::string> subfilt
 #endif
 
 	char datestr[15];
-
-#ifdef __WIN32__
-	std::strftime(datestr, sizeof(datestr), "\\%Y\\%m\\%d\\", timeinfo);
-#else
 	std::strftime(datestr, sizeof(datestr), "/%Y/%m/%d/", timeinfo);
-#endif
 	// Capitalize the username
 	Account->username[0] = toupper(Account->username[0]);
 	
 	std::string path;
-#ifdef __WIN32__
-	path = "data\\" + Account->username + datestr;
-#else
 	path = "data/" + Account->username + datestr;
-#endif
+
 
 	fs::create_directories(path);
 	std::string filename = path + "links.csv";
@@ -518,12 +510,7 @@ void Saver::download_content(std::vector<Item*> i)
 				// Unsorted
 				break;
 			}
-			
-			#if __WIN32__
-				path += "\\";
-			#else
-				path += "/";
-			#endif
+			path += "/";
 
 			if (s.http_state == 200) {
 
