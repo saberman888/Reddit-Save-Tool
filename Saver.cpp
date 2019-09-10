@@ -83,9 +83,6 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after, boo
 					{
 						auto& elem = children[j];
 						Item* it = new Item;
-#ifdef _SINGLE_JSON_DUMP
-						QFIO(logpath + "single_id_dump_" + std::to_string(j) +".json", elem.dump(4));
-#endif
 						it->kind = elem.at("kind").get<std::string>();
 
 						if (it->kind == "t1") {
