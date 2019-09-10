@@ -38,6 +38,7 @@ Run RSA without any flags if you want everything thats scanned
 		-bl/-blacklist [sub]: Black list a paticular sub
 		-h/-help: help
 		-v/-version: Version
+		-sb/sortby [sort] - Sorts downloaded media by: title,subreddit,id or unsorted; with the default being subreddit
 ```
    
 ## Known Issues / Notes
@@ -51,4 +52,3 @@ Run RSA without any flags if you want everything thats scanned
 2. Add more options for directory structure E.g /Sub/Post_tite/[Content]
 2. Add things like author, permalink and etc to the text files
 3. Create GUI for RSA
-4. Implement the rest of the ways for directory structure
