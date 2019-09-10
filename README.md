@@ -44,7 +44,7 @@ Run RSA without any flags if you want everything thats scanned
 ## Known Issues / Notes
 
 1. Not really an issues/bug, but RSA doesn't support downloading video, but I want to try to support it in the future
-2. The -RHA option doesn't always work when processing a large scale of items, but I could be wrong.
+2. The -RHA option doesn't always work when processing a large scale of items, but I could be wrong, it might not work at all.
 
 ## Things I plan to do to RSA/RST
 
