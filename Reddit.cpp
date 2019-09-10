@@ -17,14 +17,8 @@ void RedditAccess::init_logs() {
 	std::strftime(datestr, sizeof(datestr), "%Y-%m-%d ", timeinfo);
 #endif
 	
-
-#ifdef __WIN32__
-	this->logpath = "logs\\" + std::string(datestr) + "\\" + Account->username + "\\";
-	this->mediapath = "media\\" + std::string(datestr) + "\\" + Account->username + "\\";
-#else
 	this->logpath = std::string(fs::current_path().u8string()) + "/logs/" + std::string(datestr) + "/" + Account->username + "/";
 	this->mediapath = std::string(fs::current_path().u8string()) + "/media/" + std::string(datestr) + "/" + Account->username + "/";
-#endif
 	std::clog << "Current log to be generated at: " << this->logpath << std::endl;
 
 	fs::create_directories(logpath);
