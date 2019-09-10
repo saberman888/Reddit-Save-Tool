@@ -33,7 +33,7 @@ public:
 	void WriteLinkCSV(std::vector<Item*> src) { std::vector<std::string> filter; write_links(src, filter); }
 	void WriteLinkCSV(std::vector<Item*> src, std::vector<std::string> filter) { write_links(src, filter); }
 	bool write_links(std::vector<Item*> src, std::vector<std::string> subfilter);
-	void download_content(std::vector<Item*> i, Sort s);
+	void download_content(std::vector<Item*> i);
 	bool posts_only;
 	bool comments_only;
 
@@ -41,4 +41,6 @@ private:
 
 	State get_saved_items(std::vector< Item* >& sitem, std::string after, bool get_comments);
 	State retrieve_comments(Item* i);
+
+
 };
