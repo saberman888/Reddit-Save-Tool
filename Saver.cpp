@@ -450,10 +450,10 @@ bool Saver::write_links(std::vector<Item*> src, std::vector<std::string> subfilt
 }
 
 
-void Saver::download_content(std::vector<Item*> i, Sort st)
+void Saver::download_content(std::vector<Item*> i)
 {
 	std::clog << "Beginning to save content." << std::endl;
-	std::clog << "Sorted by enum: " << st << std::endl;
+	std::clog << "Sorted by enum: " << args.sort << std::endl;
 
 	for (int j = 0; j < args.limit; j++) {
 		Item *elem = i[j];
@@ -506,7 +506,7 @@ void Saver::download_content(std::vector<Item*> i, Sort st)
 				continue;
 			}
 			
-			switch (st)
+			switch (args.sort)
 			{
 			case Subreddit:
 				path += elem->subreddit;
@@ -515,7 +515,7 @@ void Saver::download_content(std::vector<Item*> i, Sort st)
 				path += elem->id;
 				break;
 			case Title:
-				path += elem->title;
+				path += stripfname(elem->title);
 				break;
 			default:
 				// Unsorted
@@ -533,8 +533,15 @@ void Saver::download_content(std::vector<Item*> i, Sort st)
 				std::vector<std::string> res;
 				boost::split(res, ct, boost::is_any_of("/"));
 				if (args.EnableImages) {
-					if ((res[0] == "image" || res[1] == "zip") && !fs::exists(path))
-						fs::create_directories(path);
+					if ((res[0] == "image" || res[1] == "zip") && !fs::exists(path)) {
+						try {
+							fs::create_directories(path);
+						}
+						catch (fs::filesystem_error& e) {
+							std::clog << e.what() << ", " << path << ", ID: " << elem->id << std::endl;
+							std::cout << e.what() << ", " << path << ", ID: " << elem->id << std::endl;
+						}
+					}
 
 					if (res[0] == "image") {
 						std::ofstream(path + elem->id + "." + res[1], std::ios::binary) << data;
@@ -546,15 +553,28 @@ void Saver::download_content(std::vector<Item*> i, Sort st)
 					}
 				}
 				if (args.EnableText) {
-					if (!fs::exists(path))
-						fs::create_directories(path);
-
+					
 					std::clog << "Outputting " << elem->id << ", " << elem->kind << std::endl;
-					if (elem->is_self && elem->kind == "t3") {
-						QFIO(path + "t3_" + elem->id + ".txt", elem->orig_self_text);
-					}
-					else if (elem->kind == "t1") {
-						QFIO(path + "t1_" + elem->id + ".txt", elem->orig_body);
+					if ((elem->is_self && elem->kind == "t3") || elem->kind == "t1") {
+						if (!fs::exists(path)) {
+							try {
+								fs::create_directories(path);
+							}
+							catch (fs::filesystem_error& e) {
+								std::clog << e.what() << ", " << path << ", ID: " << elem->id << std::endl;
+								std::cout << e.what() << ", " << path << ", ID: " << elem->id << std::endl;
+							}
+						}
+						std::fstream out(path + elem->kind + "_" + elem->id + ".txt", std::ios::out);
+						if(elem->kind == "t3")
+							out << "Title: " << elem->title << std::endl;
+						out << "Author: " << elem->author << std::endl;
+						out << "Date: " << to_realtime(elem->created_utc) << std::endl;
+						out << elem->permalink << std::endl;
+						if (elem->kind == "t1")
+							out << elem->orig_body << std::endl;
+						else
+							out << elem->orig_self_text << std::endl;
 					}
 
 				}
@@ -602,16 +622,17 @@ bool Saver::scan_cmd(int argc, char* argv[])
 		else if (arg == "-h" || arg == "--help") {
 			std::cout << "	Flags:" << std::endl
 
-				<< "- i: Only images" << std::endl
-				<< "a[ACCOUNT] : Load specific account" << std::endl
-				<< "t : Only text" << std::endl
-				<< "e : Get everything" << std::endl
-				<< "dc : Disable comments" << std::endl
-				<< "l[limit] : Sets the limit of the number of comments, the default being 250 items" << std::endl
-				<< "rha : Enable reddit - html - archiver output" << std::endl
-				<< "v / --version : Get version" << std::endl
-				<< "whl / -whitelist[sub, sub] - whitelists a patricular sub" << std::endl
-				<< "bl / -blacklist[sub, sub] - blackists a paticular sub" << std::endl;
+				<< "-i: Only images" << std::endl
+				<< "-a[ACCOUNT] : Load specific account" << std::endl
+				<< "-t : Only text" << std::endl
+				<< "-e : Get everything" << std::endl
+				<< "-dc : Disable comments" << std::endl
+				<< "-l[limit] : Sets the limit of the number of comments, the default being 250 items" << std::endl
+				<< "-rha : Enable reddit - html - archiver output" << std::endl
+				<< "-v / --version : Get version" << std::endl
+				<< "-whl / -whitelist[sub, sub] - whitelists a patricular sub" << std::endl
+				<< "-bl / -blacklist[sub, sub] - blackists a paticular sub" << std::endl
+				<< "-sb/ -sortby [subreddit,title,id or unsorted] - Arranges the media downloaded based on the selected sort" << std::endl;
 			return false;
 		}
 		else if (arg == "-v" || arg == "-version") {
@@ -634,6 +655,7 @@ bool Saver::scan_cmd(int argc, char* argv[])
 		else if (arg == "-whitelist" || arg == "-whl") {
 			if (i + 1 >= argc) {
 				std::cout << "Second argument for -whitelist/-whl options not present" << std::endl;
+				return false;
 			}
 			if (std::string comma_check = argv[i + 1]; comma_check.rfind(",") != std::string::npos) {
 
@@ -647,6 +669,7 @@ bool Saver::scan_cmd(int argc, char* argv[])
 		else if (arg == "-blacklist" || arg == "-bl") {
 			if (i + 1 >= argc) {
 				std::cout << "Second argument for -blacklist/-bl options not present" << std::endl;
+				return false;
 			}
 			if (std::string comma_check = argv[i + 1]; comma_check.rfind(",") != std::string::npos) {
 
@@ -654,6 +677,32 @@ bool Saver::scan_cmd(int argc, char* argv[])
 			}
 			else {
 				args.blacklist.push_back(argv[i + 1]);
+			}
+			i++;
+		}
+		else if (arg == "-sb" || "-sortby")
+		{
+			if (i + 1 >= argc) {
+				std::cout << "Second argument for -sb/-sortby options not present" << std::endl;
+				return false;
+			}
+			std::string sort = argv[i + 1];
+			boost::algorithm::to_lower(sort);
+			if (sort == "subreddit" || sort == "sub")
+			{
+				args.sort = Subreddit;
+			}
+			else if (sort == "id") {
+				args.sort = ID;
+			}
+			else if (sort == "title") {
+				args.sort = Title;
+			}
+			else if(sort == "unsorted"){
+				args.sort = Unsorted;
+			}
+			else {
+				args.sort = Subreddit;
 			}
 			i++;
 		}
