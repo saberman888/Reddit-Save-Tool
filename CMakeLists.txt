@@ -4,22 +4,17 @@ set(CMAKE_CXX_STANDARD 17)
 include_directories(reddit-save-archiver)
 
 option(DEBUG "Enable debugging" OFF)
-option(SINGLE_ID_DUMP, "Enable dumping single branches of Json for debugging purposes" OFF)
 option(RELEASE "release build" ON)
 if(DEBUG)
 	add_compile_options(-D_DEBUG=1)
 endif()
 
-if(SINGLE_ID_DUMP)
-	add_compile_options(-D_SINGLE_JSON_DUMP=1)
-endif()
-
-if(DEBUG OR SINGLE_ID_DUMP)
+if(DEBUG)
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/debug)
 else(RELEASE)
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/release)
 endif()
-add_compile_options(-DVERSION="2019.9.7")
+add_compile_options(-DVERSION="2019.9.9")
 
 add_executable(reddit-save-archiver base.cpp Reddit.cpp Saver.cpp Source.cpp)
 
