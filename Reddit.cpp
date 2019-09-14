@@ -48,9 +48,12 @@ bool RedditAccess::load_login_info()
 	bool success = false;
 	std::fstream info("settings.json", std::ios::in | std::ios::out);
 	if (!info.good()) {
+		info.open("settings.json", std::ios::out);
 		std::clog << "Failed to open settings.json" << std::endl;
-		nlohmann::json creds = { {"accounts", nullptr } };
-		creds["accounts"] = nlohmann::json::array({ {"client_id" , "cid" }, {"secret","secret"}, {"username" , "user"}, {"password","pass"}, {"user_agent", "ua"} });
+		nlohmann::json creds;
+		creds["accounts"] = nlohmann::json::array();
+		nlohmann::json account = {{ "client_id" ,"cid_here" }, { "secret","secret_here" }, { "username" , "username_here" }, { "password","password_here" }, { "user_agent", "useragent_here" }};
+		creds["accounts"].push_back(account);
 		info << creds.dump(4);
 		std::cout << "Could not find settings.json" << std::endl;
 		std::clog << "Recreating settings.json" << std::endl;
@@ -92,12 +95,13 @@ bool RedditAccess::load_login_info()
 
 			if (!found) {
 				std::clog << "Username for: " << args.username << " is not in settings.json" << std::endl;
-				std::clog << "No username provided, using account of index: 0" << std::endl;
+				std::clog << "No username provided, using account of index: " << index << ", username of ";
 				this->Account = accounts[index];
-				return false;
+				std::clog << this->Account->username << std::endl;
+				return true;
 			}
 			this->Account = accounts[index];
-			std::clog << "Account loaded." << std::endl;
+			std::clog << "Account " << Account->username << "is loaded." << std::endl;
 		}
 		else {
 			this->Account = accounts[0];
