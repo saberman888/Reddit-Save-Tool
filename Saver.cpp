@@ -163,6 +163,7 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after, boo
 						std::clog << "ID: " << it->id << std::endl;
 						it->created_utc = elem.at("data").at("created_utc").get<long>();
 						it->subreddit = elem.at("data").at("subreddit").get<std::string>();
+						boost::algorithm::to_lower(it->subreddit);
 						it->num_comments = elem.at("data").at("num_comments").get<int>();
 						it->over_18 = elem.at("data").at("over_18").get<bool>();
 						it->score = elem.at("data").at("score").get<int>();
@@ -652,6 +653,8 @@ bool Saver::scan_cmd(int argc, char* argv[])
 			else {
 				args.whitelist.push_back(argv[i + 1]);
 			}
+			for (auto& elem : args.whitelist)
+				boost::algorithm::to_lower(elem);
 			i++;
 		}
 		else if (arg == "-blacklist" || arg == "-bl") {
@@ -666,6 +669,8 @@ bool Saver::scan_cmd(int argc, char* argv[])
 			else {
 				args.blacklist.push_back(argv[i + 1]);
 			}
+			for (auto& elem : args.whitelist)
+				boost::algorithm::to_lower(elem);
 			i++;
 		}
 		else if (arg == "-sb" || "-sortby")
@@ -746,3 +751,4 @@ State Saver::AccessPosts(std::vector< Item* >& saved)
 	}
 	std::cout << "Total saved items: " << saved.size() << std::endl;
 	return s;
+}
