@@ -444,11 +444,15 @@ void Saver::download_content(std::vector<Item*> i)
 	std::clog << "Beginning to save content." << std::endl;
 	std::clog << "Sorted by enum: " << args.sort << std::endl;
 
+	// if the number of posts i is less than of args.limit, replace args.limit with the size of i
+	if (i.size() < args.limit)
+		args.limit = i.size();
+
 	for (int j = 0; j < args.limit; j++) {
 		Item *elem = i[j];
 		bool imgur_album = false;
 		
-		if(std::vector<std::string>::iterator whitelist_it = std::find(std::begin(args.whitelist), std::end(args.whitelist), elem->subreddit); (whitelist_it == std::end(args.whitelist)) && (!args.whitelist.empty()))
+ 		if(std::vector<std::string>::iterator whitelist_it = std::find(std::begin(args.whitelist), std::end(args.whitelist), elem->subreddit); (whitelist_it == std::end(args.whitelist)) && (!args.whitelist.empty()))
 		{
 			std::clog << "Item doesn't match whitelist: " << elem->kind <<", " << elem->id << ", " << elem->url << ", " << elem->subreddit << std::endl;
 			continue;
@@ -742,7 +746,3 @@ State Saver::AccessPosts(std::vector< Item* >& saved)
 	}
 	std::cout << "Total saved items: " << saved.size() << std::endl;
 	return s;
-}
-
-
-
