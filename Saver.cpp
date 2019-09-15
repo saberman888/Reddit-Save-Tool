@@ -111,14 +111,6 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after, boo
 							it->body = "\"" + it->body + "\"";
 
 							std::string permalink = elem.at("data").at("permalink").get<std::string>();
-							std::vector<std::string> ptsv;
-							boost::split(ptsv, permalink, boost::is_any_of("/"));
-
-							std::size_t permalink_tail_size = ptsv[ptsv.size() - 2].size();
-
-							permalink = permalink.substr(0, (permalink.size()-2) - permalink_tail_size);
-
-							
 							it->permalink = permalink;
 
 
@@ -170,8 +162,11 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after, boo
 						it->stickied = elem.at("data").at("stickied").get<bool>();
 						it->subreddit_id = elem.at("data").at("subreddit_id").get<std::string>();
 
-						// replace permalink
-						it->permalink.replace(0, it->subreddit.size() + 3, "/r/" + Account->username);
+						// replace permalink if
+						if (args.RHA) {
+							it->rha_permalink = it->permalink;
+							it->rha_permalink.replace(0, it->subreddit.size() + 3, "/r/" + Account->username);
+						}
 						if(get_comments)
 							RetrieveComments(it);
 
@@ -621,7 +616,8 @@ bool Saver::scan_cmd(int argc, char* argv[])
 				<< "-v / --version : Get version" << std::endl
 				<< "-whl / -whitelist[sub, sub] - whitelists a patricular sub" << std::endl
 				<< "-bl / -blacklist[sub, sub] - blackists a paticular sub" << std::endl
-				<< "-sb/ -sortby [subreddit,title,id or unsorted] - Arranges the media downloaded based on the selected sort" << std::endl;
+				<< "-sb/ -sortby [subreddit,title,id or unsorted] - Arranges the media downloaded based on the selected sort" << std::endl
+				<< "-r/-reverse reverses the list of saved items" << std::endl;
 			return false;
 		}
 		else if (arg == "-v" || arg == "-version") {
@@ -673,7 +669,7 @@ bool Saver::scan_cmd(int argc, char* argv[])
 				boost::algorithm::to_lower(elem);
 			i++;
 		}
-		else if (arg == "-sb" || "-sortby")
+		else if (arg == "-sb" || arg == "-sortby")
 		{
 			if (i + 1 >= argc) {
 				std::cout << "Second argument for -sb/-sortby options not present" << std::endl;
@@ -698,6 +694,9 @@ bool Saver::scan_cmd(int argc, char* argv[])
 				args.sort = Subreddit;
 			}
 			i++;
+		}
+		else if (arg == "-r" || arg == "-reverse") {
+			args.reverse = true;
 		}
 		else {
 			std::cerr << "Error, unkown command: " << argv[i] << std::endl;
@@ -752,3 +751,6 @@ State Saver::AccessPosts(std::vector< Item* >& saved)
 	std::cout << "Total saved items: " << saved.size() << std::endl;
 	return s;
 }
+
+
+
