@@ -20,7 +20,18 @@ cmake -G "COMPILER_HERE"
 Before you start RSA, you need to setup your credentials from https://www.reddit.com/prefs/apps/ , apply them into settings.json and apply then the necessary program parameters:
 
 ```
-{"accounts": [{"client_id":"CLIENT_ID_HERE","password":"PASSWORD_HERE","secret":"SECRET_HERE","user_agent":"USER AGENT HERE","username":"USERNAME_HERE"}]}
+{
+    "accounts": [
+        {
+            "client_id": "cid_here",
+            "password": "password_here",
+            "secret": "secret_here",
+            "user_agent": "useragent_here",
+            "username": "username_here"
+        }
+    ]
+}
+
 ```
 
 Run RSA without any flags if you want everything thats scanned
@@ -39,6 +50,7 @@ Run RSA without any flags if you want everything thats scanned
 		-h/-help: help
 		-v/-version: Version
 		-sb/sortby [sort] - Sorts downloaded media by: title,subreddit,id or unsorted; with the default being subreddit
+		-r/-reverse - reverse the list of items collected from save
 ```
    
 ## Known Issues / Notes
