@@ -24,6 +24,7 @@ using namespace std;
 		-whl/-whitelist [sub,sub] - whitelists a patricular sub
 		-bl/-blacklist [sub,sub] - blackists a paticular sub
 		-sb/sort_by [sort] - sort media
+		-r/-reverse - reverse the saved item list 
 
 	*/
 
@@ -52,6 +53,11 @@ int main(int argc, char* argv[])
 	}
 	std::vector<Item*> iv;
 	s.AccessPosts(iv);
+
+	if (s.args.reverse)
+	{
+		std::reverse(std::begin(iv),std::end(iv));
+	}
 
 	std::cout << "Processed: " << iv.size() << std::endl;
 	if (s.args.EnableText || s.args.EnableImages) {
