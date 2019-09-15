@@ -49,8 +49,8 @@ Run RSA without any flags if you want everything thats scanned
 		-bl/-blacklist [sub]: Black list a paticular sub
 		-h/-help: help
 		-v/-version: Version
-		-sb/sortby [sort] - Sorts downloaded media by: title,subreddit,id or unsorted; with the default being subreddit
-		-r/-reverse - reverse the list of items collected from save
+		-sb/sortby [sort]: Sorts downloaded media by: title,subreddit,id or unsorted; with the default being subreddit
+		-r/-reverse: reverse the list of items collected from save
 ```
    
 ## Known Issues / Notes
