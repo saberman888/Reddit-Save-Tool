@@ -77,7 +77,7 @@ class CMDArgs{
 public:
 	CMDArgs();
 	//bool OnlyImages, OnlyText, EnableImages, Everything, EnableComments, EnableText, rha;
-	bool EnableImages, EnableText, DisableComments, RHA;
+	bool EnableImages, EnableText, DisableComments, RHA, reverse;
 	int limit;
 	std::string username;
 	std::vector<std::string> whitelist, blacklist;
@@ -91,7 +91,7 @@ struct creds {
 // Item holds items from user's saved
 typedef struct _Item
 {
-	std::string permalink;
+	std::string permalink, rha_permalink;
 	std::string author;
 	long created_utc;
 	std::string body, orig_body, parent_id;
