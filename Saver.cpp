@@ -604,20 +604,20 @@ bool Saver::scan_cmd(int argc, char* argv[])
 			args.RHA = true;
 		}
 		else if (arg == "-h" || arg == "--help") {
-			std::cout << "	Flags:" << std::endl
+			std::cout << "Flags:" << std::endl
 
-				<< "-i: Only images" << std::endl
-				<< "-a[ACCOUNT] : Load specific account" << std::endl
-				<< "-t : Only text" << std::endl
-				<< "-e : Get everything" << std::endl
-				<< "-dc : Disable comments" << std::endl
-				<< "-l[limit] : Sets the limit of the number of comments, the default being 250 items" << std::endl
-				<< "-rha : Enable reddit - html - archiver output" << std::endl
-				<< "-v / --version : Get version" << std::endl
-				<< "-whl / -whitelist[sub, sub] - whitelists a patricular sub" << std::endl
-				<< "-bl / -blacklist[sub, sub] - blackists a paticular sub" << std::endl
-				<< "-sb/ -sortby [subreddit,title,id or unsorted] - Arranges the media downloaded based on the selected sort" << std::endl
-				<< "-r/-reverse reverses the list of saved items" << std::endl;
+				<< "	-i: Only images" << std::endl
+				<< "	-a[ACCOUNT] : Load specific account" << std::endl
+				<< "	-t : Only text" << std::endl
+				<< "	-e : Get everything" << std::endl
+				<< "	-dc : Disable comments" << std::endl
+				<< "	-l[limit] : Sets the limit of the number of comments, the default being 250 items" << std::endl
+				<< "	-rha : Enable reddit - html - archiver output" << std::endl
+				<< "	-v / --version : Get version" << std::endl
+				<< "	-whl / -whitelist[sub, sub] : whitelists a patricular sub" << std::endl
+				<< "	-bl / -blacklist[sub, sub] : blackists a paticular sub" << std::endl
+				<< "	-sb/ -sortby [subreddit,title,id or unsorted] : Arranges the media downloaded based on the selected sort" << std::endl
+				<< "	-r/-reverse reverses : the list of saved items" << std::endl;
 			return false;
 		}
 		else if (arg == "-v" || arg == "-version") {
