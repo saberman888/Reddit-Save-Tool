@@ -63,6 +63,7 @@ typedef struct _com
 	std::string subreddit_id;
 	bool stickied;
 	int score;
+	bool uw; // User whitelist, whitelist but with users too
 }Comment;
 
 typedef enum sortby

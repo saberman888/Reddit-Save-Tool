@@ -103,11 +103,11 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after, boo
 							boost::replace_all(title, "\"", "&#x22;");
 							it->title = title;
 							it->orig_body = elem.at("data").at("body").get<std::string>();
-							
+
 							boost::replace_all(it->body, ",", "&#x2c;");
 							boost::replace_all(it->body, "\"", "&#x22;");
 							boost::replace_all(it->body, "\n", "&#13;");
-							
+
 							it->body = "\"" + it->body + "\"";
 
 							std::string permalink = elem.at("data").at("permalink").get<std::string>();
@@ -134,7 +134,7 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after, boo
 							{
 								it->orig_self_text = elem.at("data").at("selftext").get<std::string>();
 								it->self_text = it->orig_self_text;
-								
+
 								boost::replace_all(it->self_text, ",", "&#x2c;");
 								boost::replace_all(it->self_text, "\"", "&#x22;");
 								boost::replace_all(it->self_text, "\n", "&#13;");
@@ -187,7 +187,7 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after, boo
 					std::clog << "get_saved_items result state: " << response.http_state << ", " << response.message << std::endl;
 					return response;
 				}
-				
+
 				response.http_state = response_code;
 				response.message = "";
 
@@ -351,7 +351,7 @@ bool Saver::write_links(std::vector<Item*> src, std::vector<std::string> subfilt
 	localtime_s(timeinfo, &t);
 #elif (defined(__MINGW64__) || defined(__MINGW32__))
 	timeinfo = localtime(&t);
-#else 
+#else
 	localtime_r(&t,timeinfo);
 #endif
 
@@ -359,7 +359,7 @@ bool Saver::write_links(std::vector<Item*> src, std::vector<std::string> subfilt
 	std::strftime(datestr, sizeof(datestr), "/%Y/%m/%d/", timeinfo);
 	// Capitalize the username
 	Account->username[0] = toupper(Account->username[0]);
-	
+
 	std::string path;
 	path = "data/" + Account->username + datestr;
 
@@ -405,7 +405,7 @@ bool Saver::write_links(std::vector<Item*> src, std::vector<std::string> subfilt
 			out << elem->body;
 			std::clog << elem->body;
 		}
-				
+
 		out << "," << bool2str(elem->stickied) << "," << elem->subreddit_id << "," << elem->title << "," << elem->url << std::endl;
 			std::clog << "," << bool2str(elem->stickied) << "," << elem->subreddit_id << "," << elem->title << "," << elem->url;
 
@@ -428,7 +428,7 @@ bool Saver::write_links(std::vector<Item*> src, std::vector<std::string> subfilt
 			}
 		}
 
-		
+
 
 	}
 	return true;
@@ -447,19 +447,31 @@ void Saver::download_content(std::vector<Item*> i)
 	for (int j = 0; j < args.limit; j++) {
 		Item *elem = i[j];
 		bool imgur_album = false;
-		
+
  		if(std::vector<std::string>::iterator whitelist_it = std::find(std::begin(args.whitelist), std::end(args.whitelist), elem->subreddit); (whitelist_it == std::end(args.whitelist)) && (!args.whitelist.empty()))
 		{
 			std::clog << "Item doesn't match whitelist: " << elem->kind <<", " << elem->id << ", " << elem->url << ", " << elem->subreddit << std::endl;
 			continue;
 		}
-		
+
 		if(std::vector<std::string>::iterator blacklist_it = std::find(std::begin(args.blacklist), std::end(args.blacklist), elem->subreddit); blacklist_it != std::end(args.blacklist))
 		{
 			std::clog << "Skipping: " << elem->kind <<", " << elem->id << ", " << elem->url << ", " << elem->subreddit << std::endl;
 			continue;
 		}
-		
+
+		if(std::vector<std::string>::iterator user_whitelist_it = std::find(std::begin(args.whitelist), std::end(args.whitelist), elem->author); (user_whitelist_it != std::endl(args.whitelist)) && args.uw)
+		{
+			std::clog << "Skipping: " << elem->kind << ", " << elem->id << ", " << elem->url << ", /u/" << elem->author << std::endl;
+			continue;
+		}
+
+		if(std::vector<std::string>::iterator user_blacklist_it = std::find(std::begin(args.blacklist), std::end(args.blacklist), elem->author); user_blacklist_it != std::endl(args.blacklist) && args.uw)
+		{
+			std::clog << "Skipping: " << elem->kind << ", " << elem->id << ", " << elem->url << ", /u/" << elem->author << std::endl;
+			continue;
+		}
+
 		if (elem->url.rfind("imgur.com/a/", 0) != std::string::npos)
 			imgur_album = true;
 
@@ -487,14 +499,14 @@ void Saver::download_content(std::vector<Item*> i)
 			curl_easy_getinfo(handle, CURLINFO_CONTENT_TYPE, &ct);
 			QFIO(this->logpath + "content_download_" + elem->id + ".txt", hd);
 			std::string path = this->mediapath;
-			
+
 			if(result != CURLE_OK)
 			{
 				std::cerr << curl_easy_strerror(result) << std::endl;
 				std::cout << "Skipping: " << elem->kind <<", " << elem->id << ", " << elem->url << std::endl;
 				continue;
 			}
-			
+
 			switch (args.sort)
 			{
 			case Subreddit:
@@ -537,7 +549,7 @@ void Saver::download_content(std::vector<Item*> i)
 					}
 				}
 				if (args.EnableText) {
-					
+
 					std::clog << "Outputting " << elem->id << ", " << elem->kind << std::endl;
 					if ((elem->is_self && elem->kind == "t3") || elem->kind == "t1") {
 						if (!fs::exists(path)) {
@@ -614,10 +626,11 @@ bool Saver::scan_cmd(int argc, char* argv[])
 				<< "	-l[limit] : Sets the limit of the number of comments, the default being 250 items" << std::endl
 				<< "	-rha : Enable reddit - html - archiver output" << std::endl
 				<< "	-v / --version : Get version" << std::endl
-				<< "	-whl / -whitelist[sub, sub] : whitelists a patricular sub" << std::endl
-				<< "	-bl / -blacklist[sub, sub] : blackists a paticular sub" << std::endl
+				<< "	-whl / -whitelist[sub, sub] : whitelists a patricular sub or user with -uw" << std::endl
+				<< "	-bl / -blacklist[sub, sub] : blackists a paticular sub or user with -uw" << std::endl
 				<< "	-sb/ -sortby [subreddit,title,id or unsorted] : Arranges the media downloaded based on the selected sort" << std::endl
-				<< "	-r/-reverse reverses : the list of saved items" << std::endl;
+				<< "	-r/-reverse reverses : the list of saved items" << std::endl
+				<< "	-uw : Enable whitelisting users" << std::endl;
 			return false;
 		}
 		else if (arg == "-v" || arg == "-version") {
@@ -697,6 +710,8 @@ bool Saver::scan_cmd(int argc, char* argv[])
 		}
 		else if (arg == "-r" || arg == "-reverse") {
 			args.reverse = true;
+		} else if(arg == "-uw") {
+			args.uw = true;
 		}
 		else {
 			std::cerr << "Error, unkown command: " << argv[i] << std::endl;
@@ -751,6 +766,3 @@ State Saver::AccessPosts(std::vector< Item* >& saved)
 	std::cout << "Total saved items: " << saved.size() << std::endl;
 	return s;
 }
-
-
-
