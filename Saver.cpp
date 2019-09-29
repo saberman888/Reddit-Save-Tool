@@ -50,6 +50,7 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after, boo
 			curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &response_code);
 			curl_easy_cleanup(handle);
 			curl_global_cleanup();
+			curl_free(header);
 
 			tick();
 #ifdef _DEBUG
@@ -460,13 +461,13 @@ void Saver::download_content(std::vector<Item*> i)
 			continue;
 		}
 
-		if(std::vector<std::string>::iterator user_whitelist_it = std::find(std::begin(args.whitelist), std::end(args.whitelist), elem->author); (user_whitelist_it != std::endl(args.whitelist)) && args.uw)
+		if(std::vector<std::string>::iterator user_whitelist_it = std::find(std::begin(args.whitelist), std::end(args.whitelist), elem->author); (user_whitelist_it != std::end(args.whitelist)) && args.uw)
 		{
 			std::clog << "Skipping: " << elem->kind << ", " << elem->id << ", " << elem->url << ", /u/" << elem->author << std::endl;
 			continue;
 		}
 
-		if(std::vector<std::string>::iterator user_blacklist_it = std::find(std::begin(args.blacklist), std::end(args.blacklist), elem->author); user_blacklist_it != std::endl(args.blacklist) && args.uw)
+		if(std::vector<std::string>::iterator user_blacklist_it = std::find(std::begin(args.blacklist), std::end(args.blacklist), elem->author); (user_blacklist_it != std::end(args.blacklist)) && args.uw)
 		{
 			std::clog << "Skipping: " << elem->kind << ", " << elem->id << ", " << elem->url << ", /u/" << elem->author << std::endl;
 			continue;
@@ -567,10 +568,14 @@ void Saver::download_content(std::vector<Item*> i)
 						out << "Author: " << elem->author << std::endl;
 						out << "Date: " << to_realtime(elem->created_utc) << std::endl;
 						out << elem->permalink << std::endl;
-						if (elem->kind == "t1")
+						if (elem->kind == "t1"){
 							out << elem->orig_body << std::endl;
-						else
+
+						}
+						else{
 							out << elem->orig_self_text << std::endl;
+						}
+
 					}
 
 				}

@@ -83,6 +83,7 @@ public:
 	std::string username;
 	std::vector<std::string> whitelist, blacklist;
 	Sort sort;
+	bool uw; // User whitelist, whitelist but with users too
 };
 
 struct creds {
