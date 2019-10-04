@@ -81,9 +81,9 @@ public:
 	bool EnableImages, EnableText, DisableComments, RHA, reverse;
 	int limit;
 	std::string username;
-	std::vector<std::string> whitelist, blacklist;
+	std::vector<std::string> whitelist, blacklist, uw_list, ub_list;
 	Sort sort;
-	bool uw; // User whitelist, whitelist but with users too
+	bool uw, ub; // User whitelist, whitelist but with users too
 };
 
 struct creds {

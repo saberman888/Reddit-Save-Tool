@@ -461,13 +461,13 @@ void Saver::download_content(std::vector<Item*> i)
 			continue;
 		}
 
-		if(std::vector<std::string>::iterator user_whitelist_it = std::find(std::begin(args.whitelist), std::end(args.whitelist), elem->author); (user_whitelist_it != std::end(args.whitelist)) && args.uw)
+		if(std::vector<std::string>::iterator user_whitelist_it = std::find(std::begin(args.uw_list), std::end(args.uw_list), elem->author); (user_whitelist_it != std::end(args.uw_list)) && args.uw)
 		{
 			std::clog << "Skipping: " << elem->kind << ", " << elem->id << ", " << elem->url << ", /u/" << elem->author << std::endl;
 			continue;
 		}
 
-		if(std::vector<std::string>::iterator user_blacklist_it = std::find(std::begin(args.blacklist), std::end(args.blacklist), elem->author); (user_blacklist_it != std::end(args.blacklist)) && args.uw)
+		if(std::vector<std::string>::iterator user_blacklist_it = std::find(std::begin(args.ub_list), std::end(args.ub_list), elem->author); (user_blacklist_it != std::end(args.ub_list)) && args.ub)
 		{
 			std::clog << "Skipping: " << elem->kind << ", " << elem->id << ", " << elem->url << ", /u/" << elem->author << std::endl;
 			continue;
@@ -717,6 +717,20 @@ bool Saver::scan_cmd(int argc, char* argv[])
 			args.reverse = true;
 		} else if(arg == "-uw") {
 			args.uw = true;
+			if (i + 1 >= argc) {
+				std::cout << "Second argument for -uw options not present" << std::endl;
+				return false;
+			}
+			if (std::string comma_check = argv[i + 1]; comma_check.rfind(",") != std::string::npos) {
+
+				boost::split(args.uw_list, argv[i + 1], boost::is_any_of(","));
+			}
+			else {
+				args.uw_list.push_back(argv[i + 1]);
+			}
+			for (auto& elem : args.uw_list)
+				boost::algorithm::to_lower(elem);
+			i++;
 		}
 		else {
 			std::cerr << "Error, unkown command: " << argv[i] << std::endl;

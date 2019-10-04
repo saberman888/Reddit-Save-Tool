@@ -49,4 +49,4 @@ bool _Item::IsPossibleImage()
 	return false;
 }
 
-CMDArgs::CMDArgs() : EnableImages(true), DisableComments(false), EnableText(true), RHA(false), limit(1000), username(""), sort(Subreddit), reverse(false), uw(false) {}
+CMDArgs::CMDArgs() : EnableImages(true), DisableComments(false), EnableText(true), RHA(false), limit(1000), username(""), sort(Subreddit), reverse(false), uw(false), ub(false) {}
