@@ -80,7 +80,7 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after, boo
 
 					std::clog << "The after is: " << this->after << std::endl;
 
-					for(int j = 0; j < children.size(); j++)
+					for(size_t j = 0; j < children.size(); j++)
 					{
 						auto& elem = children[j];
 						Item* it = new Item;
@@ -445,7 +445,7 @@ void Saver::download_content(std::vector<Item*> i)
 	if (i.size() < args.limit)
 		args.limit = i.size();
 
-	for (int j = 0; j < args.limit; j++) {
+	for (size_t j = 0; j < args.limit; j++) {
 		Item *elem = i[j];
 		bool imgur_album = false;
 
