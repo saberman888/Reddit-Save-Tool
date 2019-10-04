@@ -5,12 +5,11 @@ include_directories(reddit-save-archiver)
 
 option(DEBUG "Enable debugging" OFF)
 option(RELEASE "release build" ON)
-if(DEBUG)
-	add_compile_options(-D_DEBUG=1)
-endif()
 
 if(DEBUG)
+	add_compile_options(-D_DEBUG=1)
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/debug)
+	set(CMAKE_CXX_FLAGS	"-g -Wall -Wextra -Wfatal-errors -Wno-error")
 else(RELEASE)
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/release)
 endif()
@@ -30,12 +29,4 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU" OR "${CMAKE_CXX_COMPILER_ID}" MA
 	set(LIBRARIES curl stdc++fs)
 endif()
 
-target_link_libraries(reddit-save-archiver LINK_PUBLIC ${LIBRARIES})
-
-
-
-
-
-
-
-
+target_link_libraries(reddit-save-archiver LINK_PUBLIC ${LIBRARIES} ${CMAKE_CXX_FLAGS})
