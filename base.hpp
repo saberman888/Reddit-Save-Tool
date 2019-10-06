@@ -76,11 +76,11 @@ typedef enum sortby
 class CMDArgs{
 public:
 	CMDArgs();
-	//bool OnlyImages, OnlyText, EnableImages, Everything, EnableComments, EnableText, rha;
+	//bool OnlyImages, OnlyText, EnableImages, Everything, EnableComments, EnableText, rha, xlist;
 	bool EnableImages, EnableText, DisableComments, RHA, reverse;
 	int limit;
 	std::string username;
-	std::vector<std::string> whitelist, blacklist;
+	std::vector<std::string> whitelist, blacklist, uwhitelist, ublacklist;
 	Sort sort;
 };
 

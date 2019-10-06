@@ -442,20 +442,35 @@ void Saver::download_content(std::vector<Item*> i)
 	std::clog << "Sorted by enum: " << args.sort << std::endl;
 
 	// if the number of posts i is less than of args.limit, replace args.limit with the size of i
-	if (i.size() < args.limit)
+	if (i.size() < (unsigned)args.limit)
 		args.limit = i.size();
 
-	for (size_t j = 0; j < args.limit; j++) {
+	for (size_t j = 0; j < (unsigned)args.limit; j++) {
 		Item *elem = i[j];
 		bool imgur_album = false;
 
-		std::vector<std::string>::iterator whitelist_it, blacklist_it, uwhitelist_it, ublacklist_it;
+ 		if(std::vector<std::string>::iterator whitelist_it = std::find(std::begin(args.whitelist), std::end(args.whitelist), elem->subreddit); (whitelist_it == std::end(args.whitelist)) && (!args.whitelist.empty()))
+		{
+			std::clog << "Skipping: " << elem->kind << ", " << elem->id << ", " << elem->permalink << ", "<< elem->url << ", " << elem->author << std::endl;
+			std::clog << "Reason: Username/Subreddit was on a blacklist or whitelist" << std::endl;
+			continue;
+		}
 
-		whitelist_it = std::find(std::begin(args.whitelist), std::end(args.whitelist), elem->subreddit);
-		blacklist_it = std::find(std::begin(args.blacklist), std::end(args.blacklist), elem->subreddit);
-		uwhitelist_it = std::find(std::begin(args.whitelist), std::end(args.whitelist), elem->author);
-		ublacklist_it = std::find(std::begin(args.blacklist), std::end(args.blacklist), elem->author);
-		if(whitelist_it == std::end(args.whitelist) || blacklist_it != std::end(args.blacklist) || uwhitelist_it == std::end(args.whitelist) || ublacklist_it != std::end(args.blacklist))
+		if(std::vector<std::string>::iterator blacklist_it = std::find(std::begin(args.blacklist), std::end(args.blacklist), elem->subreddit); blacklist_it != std::end(args.blacklist))
+		{
+			std::clog << "Skipping: " << elem->kind << ", " << elem->id << ", " << elem->permalink << ", "<< elem->url << ", " << elem->author << std::endl;
+			std::clog << "Reason: Username/Subreddit was on a blacklist or whitelist" << std::endl;
+			continue;
+		}
+
+		if(std::vector<std::string>::iterator user_whitelist_it = std::find(std::begin(args.uwhitelist), std::end(args.uwhitelist), elem->author); (user_whitelist_it == std::end(args.uwhitelist)) && (!args.uwhitelist.empty()))
+		{
+			std::clog << "Skipping: " << elem->kind << ", " << elem->id << ", " << elem->permalink << ", "<< elem->url << ", " << elem->author << std::endl;
+			std::clog << "Reason: Username/Subreddit was on a blacklist or whitelist" << std::endl;
+			continue;
+		}
+
+		if(std::vector<std::string>::iterator user_blacklist_it = std::find(std::begin(args.ublacklist), std::end(args.ublacklist), elem->author); (user_blacklist_it != std::end(args.ublacklist)) && (!args.ublacklist.empty()))
 		{
 			std::clog << "Skipping: " << elem->kind << ", " << elem->id << ", " << elem->permalink << ", "<< elem->url << ", " << elem->author << std::endl;
 			std::clog << "Reason: Username/Subreddit was on a blacklist or whitelist" << std::endl;
@@ -703,6 +718,37 @@ bool Saver::scan_cmd(int argc, char* argv[])
 		}
 		else if (arg == "-r" || arg == "-reverse") {
 			args.reverse = true;
+		}
+		else if(arg == "-ub") {
+			if (i + 1 >= argc) {
+				std::cout << "Second argument for -ub options not present" << std::endl;
+				return false;
+			}
+			if (std::string comma_check = argv[i + 1]; comma_check.rfind(",") != std::string::npos) {
+
+				boost::split(args.ublacklist, argv[i + 1], boost::algorithm::is_any_of(","));
+			}
+			else {
+				args.ublacklist.push_back(argv[i + 1]);
+			}
+			for (auto& elem : args.ublacklist)
+				boost::algorithm::to_lower(elem);
+			i++;
+		} else if(arg == "-uw") {
+			if (i + 1 >= argc) {
+				std::cout << "Second argument for -uw options not present" << std::endl;
+				return false;
+			}
+			if (std::string comma_check = argv[i + 1]; comma_check.rfind(",") != std::string::npos) {
+
+				boost::split(args.uwhitelist, argv[i + 1], boost::algorithm::is_any_of(","));
+			}
+			else {
+				args.uwhitelist.push_back(argv[i + 1]);
+			}
+			for (auto& elem : args.uwhitelist)
+				boost::algorithm::to_lower(elem);
+			i++;
 		}
 		else {
 			std::cerr << "Error, unkown command: " << argv[i] << std::endl;
