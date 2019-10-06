@@ -461,7 +461,7 @@ void Saver::download_content(std::vector<Item*> i)
 			continue;
 		}
 
-		if(std::vector<std::string>::iterator user_whitelist_it = std::find(std::begin(args.uw_list), std::end(args.uw_list), elem->author); (user_whitelist_it != std::end(args.uw_list)) && args.uw)
+		if(std::vector<std::string>::iterator user_whitelist_it = std::find(std::begin(args.uw_list), std::end(args.uw_list), elem->author); (user_whitelist_it == std::end(args.uw_list)) && args.uw)
 		{
 			std::clog << "Skipping: " << elem->kind << ", " << elem->id << ", " << elem->url << ", /u/" << elem->author << std::endl;
 			continue;
