@@ -63,7 +63,6 @@ typedef struct _com
 	std::string subreddit_id;
 	bool stickied;
 	int score;
-	bool uw; // User whitelist, whitelist but with users too
 }Comment;
 
 typedef enum sortby
@@ -81,9 +80,8 @@ public:
 	bool EnableImages, EnableText, DisableComments, RHA, reverse;
 	int limit;
 	std::string username;
-	std::vector<std::string> whitelist, blacklist, uw_list, ub_list;
+	std::vector<std::string> whitelist, blacklist;
 	Sort sort;
-	bool uw, ub; // User whitelist, whitelist but with users too
 };
 
 struct creds {
