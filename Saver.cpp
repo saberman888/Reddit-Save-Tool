@@ -452,10 +452,10 @@ void Saver::download_content(std::vector<Item*> i)
 		std::vector<std::string>::iterator whitelist_it, blacklist_it, uwhitelist_it, ublacklist_it;
 
 		whitelist_it = std::find(std::begin(args.whitelist), std::end(args.whitelist), elem->subreddit);
-		blacklist_it = std::find(std::begin(args.blacklist, std::end(args.blacklist)), elem->subreddit);
+		blacklist_it = std::find(std::begin(args.blacklist), std::end(args.blacklist), elem->subreddit);
 		uwhitelist_it = std::find(std::begin(args.whitelist), std::end(args.whitelist), elem->author);
-		ublacklist_it = std::find(std::begin(args.blacklist, std::end(args.blacklist)), elem->author);
-		if(whitelist_id == std::end(args.whitelist) || blacklist_it != std::end(args.blacklist) || uwhitelist_id == std::end(args.whitelist) || ublacklist_it != std::end(args.blacklist))
+		ublacklist_it = std::find(std::begin(args.blacklist), std::end(args.blacklist), elem->author);
+		if(whitelist_it == std::end(args.whitelist) || blacklist_it != std::end(args.blacklist) || uwhitelist_it == std::end(args.whitelist) || ublacklist_it != std::end(args.blacklist))
 		{
 			std::clog << "Skipping: " << elem->kind << ", " << elem->id << ", " << elem->permalink << ", "<< elem->url << ", " << elem->author << std::endl;
 			std::clog << "Reason: Username/Subreddit was on a blacklist or whitelist" << std::endl;
