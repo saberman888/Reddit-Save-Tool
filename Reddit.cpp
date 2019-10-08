@@ -113,9 +113,10 @@ bool RedditAccess::load_login_info()
 		try {
 			auto imgur = root.at("imgur");
 
-			//this->Account.
-		} catch(nlohmann::json::exception& e) {
-			
+			this->Account->imgur_client_id = imgur.at("client_id").get<std::string>();
+			this->Account->imgur_secret = imgur.at("secret").get<std::string>();
+		} catch(nlohmann::json::exception&) {
+			std::cout << "Warning: Imgur albums will only be downloaded as a zip." << std::endl;
 		}
 		success = true;
 	}
@@ -289,4 +290,48 @@ void RedditAccess::tick()
 
 	std::clog << "Requests done: " << requests_done << std::endl;
 	std::clog << "Requests done in current minute: " << this->request_done_in_current_minute << std::endl;
+}
+
+State RedditAccess::authorize_imgur()
+{
+	State response;
+	CURLcode result;
+	CURL *handle;
+	int http_code;
+	std::string data;
+
+	handle = curl_easy_init();
+	if(handle)
+	{
+		curl_global_init(CURL_GLOBAL_ALL);
+		struct curl_slist* header;
+		std::string authorization_header = "Authorization: CLIENT-ID ";
+		authorization_header += Account->imgur_client_id;
+		header = curl_slist_append(header, authorization_header.c_str());
+
+		curl_easy_setopt(handle, CURLOPT_URL, "https://api.imgur.com/oauth2/authorize");
+		curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
+		std::string params = "?client_id=" + Account->imgur_client_id + "&response_type=token"
+		curl_easy_setopt(handle, CURLOPT_POSTFIELDS, params.c_str());
+		curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, &writedat);
+		curl_easy_setopt(handle, CURLOPT_WRITEDATA, &data);
+		curl_easy_setopt(handle, CURLOPT_POST, 1L);
+		#if defined(_DEBUG)
+		curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
+		#endif
+		curl_free(header);
+		result = curl_easy_perform(handle);
+		curl_easy_cleanup(handle);
+		curl_global_cleanup();
+
+		#if defined(_DEBUG)
+		QFIO()
+
+
+	} else {
+		response.message = "Failed to load libcurl handle!";
+		response.http_state = -1;
+		return response;
+	}
+	return s;
 }
