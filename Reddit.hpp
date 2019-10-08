@@ -76,10 +76,10 @@ public:
 		Below here is an implementation for better support for imgur images
 	*/
 	// Imgur credentials
-	/*std::string imgur_acctoken, imgur_reftoken, imgur_ac;
+	std::string imgur_acctoken, imgur_reftoken, imgur_ac;
 	int imgur_pin;
 	State authorize_imgur();
-	State retrieve_album_images(std::string album_id);*/
+	State retrieve_album_images(std::string album_id);
 
 
 };
