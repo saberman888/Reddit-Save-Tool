@@ -108,6 +108,15 @@ bool RedditAccess::load_login_info()
 			std::clog << "Account: " << this->Account->username << " loaded." << std::endl;
 		}
 		is_logged_in = true;
+
+
+		try {
+			auto imgur = root.at("imgur");
+
+			//this->Account.
+		} catch(nlohmann::json::exception& e) {
+			
+		}
 		success = true;
 	}
 	catch (nlohmann::json::exception& e) {
