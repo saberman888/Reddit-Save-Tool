@@ -24,7 +24,7 @@ using namespace std;
 		-whl/-whitelist [sub,sub] - whitelists a patricular sub
 		-bl/-blacklist [sub,sub] - blackists a paticular sub
 		-sb/sort_by [sort] - sort media
-		-r/-reverse - reverse the saved item list 
+		-r/-reverse - reverse the saved item list
 
 	*/
 

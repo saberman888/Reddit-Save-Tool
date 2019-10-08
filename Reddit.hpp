@@ -2,7 +2,7 @@
 #include <string>
 #include "base.hpp"
 #include <chrono>
-#if (defined(__GNUC__) || defined(_MSC_VER)) && !(defined(__MINGW64__) || defined(__MINGW32__))
+#if defined(__GNUC__) && !(defined(__MINGW64__) || defined(__MINGW32__))
 #include <experimental/filesystem>
 namespace fs = std::experimental::filesystem;
 #else
@@ -74,4 +74,3 @@ public:
 
 
 };
-

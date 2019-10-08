@@ -6,17 +6,17 @@ void RedditAccess::init_logs() {
 	time_t t;
 	time(&t);
 	char datestr[11];
-	
+
 #if defined(_MSC_VER)
 	struct tm timeinfo;
 	localtime_s(&timeinfo, &t);
 	std::strftime(datestr, sizeof(datestr), "%Y-%m-%d ", &timeinfo);
-#else 
+#else
 	struct tm* timeinfo = nullptr;
 	timeinfo = localtime(&t);
 	std::strftime(datestr, sizeof(datestr), "%Y-%m-%d ", timeinfo);
 #endif
-	
+
 	this->logpath = std::string(fs::current_path().u8string()) + "/logs/" + std::string(datestr) + "/" + Account->username + "/";
 	this->mediapath = std::string(fs::current_path().u8string()) + "/media/" + std::string(datestr) + "/" + Account->username + "/";
 	std::clog << "Current log to be generated at: " << this->logpath << std::endl;
@@ -76,7 +76,7 @@ bool RedditAccess::load_login_info()
 				acs->secret = elem.at("secret").get<std::string>();
 				acs->user_agent = elem.at("user_agent").get<std::string>();
 
-				
+
 				this->accounts.push_back(acs);
 			}
 			catch (nlohmann::json::out_of_range& e) {
@@ -86,9 +86,9 @@ bool RedditAccess::load_login_info()
 		if (args.username != "") {
 			int index = 0;
 			bool found = false;
-			for (int i = 0; i < acc_size; i++) {
+			for (size_t i = 0; i < acc_size; i++) {
 				if (std::string usr = root.at("accounts")[i].at("username").get<std::string>(); usr == args.username){
-					index = i; 
+					index = i;
 					found = true;
 				}
 			}
@@ -115,7 +115,7 @@ bool RedditAccess::load_login_info()
 		std::clog << "Failed to load credentials" << std::endl;
 		success = false;
 	}
-	
+
 	return success;
 }
 
@@ -277,7 +277,7 @@ void RedditAccess::tick()
 	if (now < then) {
 		this->request_done_in_current_minute += 1;
 	}
-	
+
 	std::clog << "Requests done: " << requests_done << std::endl;
 	std::clog << "Requests done in current minute: " << this->request_done_in_current_minute << std::endl;
 }
