@@ -315,7 +315,7 @@ State RedditAccess::authorize_imgur()
 
 		curl_easy_setopt(handle, CURLOPT_URL, "https://api.imgur.com/oauth2/authorize");
 		curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
-		std::string params = "?client_id=" + Account->imgur_client_id + "&response_type=token";
+		std::string params = "client_id=" + Account->imgur_client_id + "&response_type=token";
 		curl_easy_setopt(handle, CURLOPT_POSTFIELDS, params.c_str());
 		curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, &writedat);
 		curl_easy_setopt(handle, CURLOPT_WRITEDATA, &data);
