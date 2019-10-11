@@ -47,13 +47,15 @@ bool RedditAccess::load_login_info()
 {
 	bool success = false;
 	std::fstream info("settings.json", std::ios::in | std::ios::out);
-	if (!info.good()) {
+	if (!info.good())
+	{
 		info.open("settings.json", std::ios::out);
 		std::clog << "Failed to open settings.json" << std::endl;
 		nlohmann::json creds;
 		creds["accounts"] = nlohmann::json::array();
 		nlohmann::json account = {{ "client_id" ,"cid_here" }, { "secret","secret_here" }, { "username" , "username_here" }, { "password","password_here" }, { "user_agent", "useragent_here" }};
 		creds["accounts"].push_back(account);
+		creds["imgur"] = {{"client_id","cid_here"}, {"secret","secret_here"}};
 		info << creds.dump(4);
 		std::cout << "Could not find settings.json" << std::endl;
 		std::clog << "Recreating settings.json" << std::endl;
@@ -115,7 +117,9 @@ bool RedditAccess::load_login_info()
 
 			this->Account->imgur_client_id = imgur.at("client_id").get<std::string>();
 			this->Account->imgur_secret = imgur.at("secret").get<std::string>();
+			this->imgur_enabled = true;
 		} catch(nlohmann::json::exception&) {
+			this->imgur_enabled = false;
 			std::cout << "Warning: Imgur albums will only be downloaded as a zip." << std::endl;
 		}
 		success = true;
@@ -304,14 +308,14 @@ State RedditAccess::authorize_imgur()
 	if(handle)
 	{
 		curl_global_init(CURL_GLOBAL_ALL);
-		struct curl_slist* header;
+		struct curl_slist* header = nullptr;
 		std::string authorization_header = "Authorization: CLIENT-ID ";
 		authorization_header += Account->imgur_client_id;
 		header = curl_slist_append(header, authorization_header.c_str());
 
 		curl_easy_setopt(handle, CURLOPT_URL, "https://api.imgur.com/oauth2/authorize");
 		curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
-		std::string params = "?client_id=" + Account->imgur_client_id + "&response_type=token"
+		std::string params = "?client_id=" + Account->imgur_client_id + "&response_type=token";
 		curl_easy_setopt(handle, CURLOPT_POSTFIELDS, params.c_str());
 		curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, &writedat);
 		curl_easy_setopt(handle, CURLOPT_WRITEDATA, &data);
@@ -321,17 +325,27 @@ State RedditAccess::authorize_imgur()
 		#endif
 		curl_free(header);
 		result = curl_easy_perform(handle);
+
+		curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http_code);
 		curl_easy_cleanup(handle);
 		curl_global_cleanup();
 
 		#if defined(_DEBUG)
-		QFIO()
+		QFIO("imgur_access.txt", data);
+		#endif
 
+		response.http_state = http_code;
+		response.message = "";
+		if(result != CURLE_OK)
+		{
+			response.message = curl_easy_strerror(result);
+
+		}
 
 	} else {
 		response.message = "Failed to load libcurl handle!";
 		response.http_state = -1;
 		return response;
 	}
-	return s;
+	return response;
 }

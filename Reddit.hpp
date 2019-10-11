@@ -78,6 +78,7 @@ public:
 	// Imgur credentials
 	std::string imgur_acctoken, imgur_reftoken, imgur_ac;
 	int imgur_pin;
+	bool imgur_enabled;
 	State authorize_imgur();
 	State retrieve_album_images(std::string album_id);
 
