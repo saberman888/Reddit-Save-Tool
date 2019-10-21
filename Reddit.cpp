@@ -17,8 +17,13 @@ void RedditAccess::init_logs() {
 	std::strftime(datestr, sizeof(datestr), "%Y-%m-%d ", timeinfo);
 #endif
 
+#if !defined(USE_HOME_DIR)
 	this->logpath = std::string(fs::current_path().u8string()) + "/logs/" + std::string(datestr) + "/" + Account->username + "/";
 	this->mediapath = std::string(fs::current_path().u8string()) + "/media/" + std::string(datestr) + "/" + Account->username + "/";
+#else
+	this->mediapath = "~/RSA/logs/" + std::string(datestr) + "/" + Account->username + "/";
+	this->logpath = "~/RSA/media/" + std::string(datestr) + "/" + Account->username + "/";
+#endif
 	std::clog << "Current log to be generated at: " << this->logpath << std::endl;
 
 	fs::create_directories(logpath);
@@ -303,33 +308,38 @@ State RedditAccess::authorize_imgur()
 	CURL *handle;
 	int http_code;
 	std::string data;
+	struct curl_slist* header = nullptr;
 
 	handle = curl_easy_init();
 	if(handle)
 	{
 		curl_global_init(CURL_GLOBAL_ALL);
-		struct curl_slist* header = nullptr;
-		std::string authorization_header = "Authorization: CLIENT-ID ";
+		std::string authorization_header = "Authorization: Client-ID ";
 		authorization_header += Account->imgur_client_id;
 		header = curl_slist_append(header, authorization_header.c_str());
 
 		curl_easy_setopt(handle, CURLOPT_URL, "https://api.imgur.com/oauth2/authorize");
+		curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header);
 		curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
-		std::string params = "client_id=" + Account->imgur_client_id + "&response_type=token";
-		curl_easy_setopt(handle, CURLOPT_POSTFIELDS, params.c_str());
+		std::string params = "client_id=" + Account->imgur_client_id + "&response_type=token&state=RSA";
+		#if defined(_DEBUG)
+		std::clog << "Imgur: " << params << std::endl;
+		std::cout << "Imgur: " << params << std::endl;
+		#endif
+		//curl_easy_setopt(handle, CURLOPT_POSTFIELDS, params.c_str());
 		curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, &writedat);
 		curl_easy_setopt(handle, CURLOPT_WRITEDATA, &data);
 		curl_easy_setopt(handle, CURLOPT_POST, 1L);
 		#if defined(_DEBUG)
 		curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
 		#endif
-		curl_free(header);
+
 		result = curl_easy_perform(handle);
 
 		curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http_code);
 		curl_easy_cleanup(handle);
 		curl_global_cleanup();
-
+		curl_free(header);
 		#if defined(_DEBUG)
 		QFIO("imgur_access.txt", data);
 		#endif

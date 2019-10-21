@@ -46,8 +46,8 @@ int main(int argc, char* argv[])
 	s.init_logs();
 	std::cout << "Requesting access to Reddit..." << std::endl;
 	State w = s.AccessReddit();
-	if(s.imgur_enabled)
-		s.authorize_imgur();
+	//if(true)
+		//s.authorize_imgur();
 	if (w.http_state != 200)
 	{
 		std::cout << "Error, failed to get a Reddit access token, " << w.http_state << " : " << w.message << std::endl;
