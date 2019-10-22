@@ -10,6 +10,10 @@ if(USE_HOME_DIR)
 	add_compile_options(-DUSE_HOME_DIR)
 endif()
 
+if(EXP_FS)
+	add_compile_options(-DEXP_FS)
+endif()
+
 if(DEBUG)
 	add_compile_options(-D_DEBUG=1)
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/debug)
