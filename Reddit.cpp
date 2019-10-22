@@ -17,12 +17,17 @@ void RedditAccess::init_logs() {
 	std::strftime(datestr, sizeof(datestr), "%Y-%m-%d ", timeinfo);
 #endif
 
-#if !defined(USE_HOME_DIR)
+
+#if defined(USE_HOME_DIR)
+	char* homedir = getenv("HOME");
+	if(homedir == NULL)
+		homedir = getpwuid(getuid())->pw_dir;
+
+	this->mediapath = std::string(homedir) + "/RSA/media/" + std::string(datestr) + "/" + Account->username + "/";
+	this->logpath = std::string(homedir) + "/RSA/logs/" + std::string(datestr) + "/" + Account->username + "/";
+#else
 	this->logpath = std::string(fs::current_path().u8string()) + "/logs/" + std::string(datestr) + "/" + Account->username + "/";
 	this->mediapath = std::string(fs::current_path().u8string()) + "/media/" + std::string(datestr) + "/" + Account->username + "/";
-#else
-	this->mediapath = "~/RSA/logs/" + std::string(datestr) + "/" + Account->username + "/";
-	this->logpath = "~/RSA/media/" + std::string(datestr) + "/" + Account->username + "/";
 #endif
 	std::clog << "Current log to be generated at: " << this->logpath << std::endl;
 
@@ -36,7 +41,7 @@ void RedditAccess::init_logs() {
 	std::clog << "Beginning log." << std::endl;
 }
 
-RedditAccess::RedditAccess() : log(nullptr), is_logged_in(false)
+RedditAccess::RedditAccess() : log(nullptr), is_logged_in(false), requests_done(0), request_done_in_current_minute(0)
 {
 }
 

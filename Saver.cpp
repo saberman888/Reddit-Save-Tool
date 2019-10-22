@@ -2,7 +2,7 @@
 #include <iostream>
 
 
-State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after, bool get_comments)
+State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after)
 {
 	std::clog << "Getting saved items" << std::endl;
 	CURL *handle;
@@ -168,8 +168,6 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after, boo
 							it->rha_permalink = it->permalink;
 							it->rha_permalink.replace(0, it->subreddit.size() + 3, "/r/" + Account->username);
 						}
-						if(get_comments)
-							RetrieveComments(it);
 
 						sitem.push_back(it);
 						std::clog << it->permalink << std::endl;
@@ -259,7 +257,7 @@ State Saver::retrieve_comments(Item* i)
 			}
 			else {
 
-				JQFIO(logpath + "json\\comments_" + i->id + ".json", jresponse);
+				JQFIO(logpath + "/comments_" + i->id + ".json", jresponse);
 				std::clog << "Parsing comments... " << std::endl;
 				nlohmann::json root = nlohmann::json::parse(jresponse);
 
@@ -507,8 +505,8 @@ void Saver::download_content(std::vector<Item*> i)
 
 			if(result != CURLE_OK)
 			{
-				std::cerr << curl_easy_strerror(result) << std::endl;
-				std::cout << "Skipping: " << elem->kind <<", " << elem->id << ", " << elem->url << std::endl;
+				std::cout << "Skipping: " << elem->kind <<", " << elem->id << ", " << elem->subreddit << ", " << elem->url << std::endl;
+				std::cerr << "Reason: " << curl_easy_strerror(result) << std::endl;
 				continue;
 			}
 
@@ -531,6 +529,9 @@ void Saver::download_content(std::vector<Item*> i)
 
 			if (s.http_state == 200) {
 
+				if(!args.DisableComments)
+					RetrieveComments(elem);
+
 				std::vector<std::string> res;
 				boost::split(res, ct, boost::is_any_of("/"));
 				if (args.EnableImages) {
@@ -547,8 +548,14 @@ void Saver::download_content(std::vector<Item*> i)
 					if (res[0] == "image") {
 						std::ofstream(path + elem->id + "." + res[1], std::ios::binary) << data;
 						std::clog << "Content: " << elem->id << " stored at " << path << std::endl;
+					} else {
+						std::clog << "Skipping: " << elem->kind <<", " << elem->id << ", " << elem->subreddit << ", " << elem->url << std::endl;
+						std::clog << "Reason: " << "MIME type is not an image" << std::endl;
+
+						std::cout << "Skipping: " << elem->kind <<", " << elem->id << ", " << elem->subreddit << ", " << elem->url << std::endl;
+						std::cout << "Reason: " << "MIME type is not an image" << std::endl;
 					}
-					else if (res[1] == "zip" && imgur_album) {
+					if (res[1] == "zip" && imgur_album) {
 						std::ofstream(path + elem->id + ".zip", std::ios::binary) << data;
 						std::clog << "Content: " << elem->id << " stored at " << path << std::endl;
 					}
@@ -787,7 +794,7 @@ State Saver::AccessPosts(std::vector< Item* >& saved)
 		is_mtime_up();
 		if (!is_time_up())
 		{
-			s = get_saved_items(saved, after, args.DisableComments);
+			s = get_saved_items(saved, after);
 		}
 		else {
 			State res = obtain_token(true);
@@ -796,7 +803,7 @@ State Saver::AccessPosts(std::vector< Item* >& saved)
 				return res;
 			}
 			else {
-				s = get_saved_items(saved, after, args.DisableComments);
+				s = get_saved_items(saved, after);
 			}
 		}
 		if(s.http_state != 200)
@@ -804,4 +811,9 @@ State Saver::AccessPosts(std::vector< Item* >& saved)
 	}
 	std::cout << "Total saved items: " << saved.size() << std::endl;
 	return s;
+}
+
+State Saver::loadcheck(std::vector<Item*>& items)
+{
+
 }

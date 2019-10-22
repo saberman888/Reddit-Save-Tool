@@ -13,6 +13,11 @@ namespace fs = std::filesystem;
 #include "nlohmann/json.hpp"
 #include <fstream>
 #include "curl/curl.h"
+#if defined(unix)
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
+#endif
 
 class RedditAccess {
 public:
