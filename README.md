@@ -51,8 +51,10 @@ Run RSA without any flags if you want everything thats scanned
 		-v/-version: Version
 		-sb/sortby [sort]: Sorts downloaded media by: title,subreddit,id or unsorted; with the default being subreddit
 		-r/-reverse: reverse the list of items collected from save
+    -uw [user,user]: Enable whitelisting users
+    -ub	[user,user]: Enable blacklisting of users
 ```
-   
+
 ## Known Issues / Notes
 
 1. Not really an issues/bug, but RSA doesn't support downloading video, but I want to try to support it in the future

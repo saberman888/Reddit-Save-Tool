@@ -10,8 +10,8 @@ if(USE_HOME_DIR)
 	add_compile_options(-DUSE_HOME_DIR)
 endif()
 
-if(EXP_FS)
-	add_compile_options(-DEXP_FS)
+if(USE_EXP_FS)
+	add_compile_options(-DUSE_EXP_FS)
 endif()
 
 if(DEBUG)

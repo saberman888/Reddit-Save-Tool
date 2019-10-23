@@ -2,18 +2,27 @@
 #include <string>
 #include "base.hpp"
 #include <chrono>
-#if defined(EXP_FS)
-#include <experimental/filesystem>
-namespace fs = std::experimental::filesystem;
-#else
-#include <filesystem>
-namespace fs = std::filesystem;
-#endif
 #include <ctime>
-#include "nlohmann/json.hpp"
 #include <fstream>
+
+#include "nlohmann/json.hpp"
 #include "curl/curl.h"
-#if defined(unix)
+
+#if defined(__cpp_lib_filesystem)
+	#include <filesystem>
+	namespace fs = std::filesystem;
+#elif defined(__cpp_lib_experimental_filesystem)
+	#include <experimental/filesystem>
+	namespace fs = std::experimental::filesystem;
+#elif defined(USE_EXP_FS)
+	#include <experimental/filesystem>
+	namespace fs = std::experimental::filesystem;
+#else
+	#error "No filesystem support found :("
+#endif
+
+
+#if defined(unix) || defined(_unix)
 #include <unistd.h>
 #include <sys/types.h>
 #include <pwd.h>
@@ -81,11 +90,10 @@ public:
 		Below here is an implementation for better support for imgur images
 	*/
 	// Imgur credentials
-	std::string imgur_acctoken, imgur_reftoken, imgur_ac;
-	int imgur_pin;
+	std::string imgur_client_id;
 	bool imgur_enabled;
-	State authorize_imgur();
 	State retrieve_album_images(std::string album_id);
+	State retrieve_imgur_image(std::string imghash, std::string& URL);
 
 
 };

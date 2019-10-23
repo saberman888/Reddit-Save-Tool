@@ -446,6 +446,7 @@ void Saver::download_content(std::vector<Item*> i)
 	for (size_t j = 0; j < (unsigned)args.limit; j++) {
 		Item *elem = i[j];
 		bool imgur_album = false;
+		bool imgur = false;
 
  		if(std::vector<std::string>::iterator whitelist_it = std::find(std::begin(args.whitelist), std::end(args.whitelist), elem->subreddit); (whitelist_it == std::end(args.whitelist)) && (!args.whitelist.empty()))
 		{
@@ -475,8 +476,38 @@ void Saver::download_content(std::vector<Item*> i)
 			continue;
 		}
 
-		if (elem->url.rfind("imgur.com/a/", 0) != std::string::npos)
+		bool b = (elem->url.rfind("https://imgur.com/", 0) != std::string::npos && elem->url.rfind("https://imgur.com/a/",0) == std::string::npos);
+		if (elem->url.rfind("imgur.com/a/", 0) != std::string::npos){
 			imgur_album = true;
+		} else if( b && imgur_enabled) {
+			std::string url = elem->url;
+			std::clog << "Retrieving Imgur image: " << url << std::endl;
+			if(elem->IsPossibleImage()){
+				// strip the extension from the urls
+				std::string urls[] = {".jpeg", ".bmp", ".png", ".gif", ".jpg", ".tiff" };
+				for(std::string elem : urls)
+					boost::erase_all(url, elem);
+			}
+			std::vector<std::string> surl;
+			boost::split(surl, url, boost::is_any_of("/"));
+
+			#ifdef _DEBUG
+			std::clog << "Imgur hash: " << surl[3] << std::endl;
+			std::cout << "Imgur hash: " << surl[3] << std::endl;
+			#endif
+
+			State res = retrieve_imgur_image(surl[3], url);
+			if(res.http_state != 200)
+			{
+				std::cout << "Error failed to retrieve imgur image!" << std::endl;
+				std::cout << "Reason: " << res.message << std::endl;
+
+				std::clog << "Error failed to retrieve imgur image!" << std::endl;
+				std::clog << "Reason: " << res.message << std::endl;
+			} else {
+				elem->url = url;
+			}
+		}
 
 		CURL* handle;
 		CURLcode result;
@@ -548,12 +579,6 @@ void Saver::download_content(std::vector<Item*> i)
 					if (res[0] == "image") {
 						std::ofstream(path + elem->id + "." + res[1], std::ios::binary) << data;
 						std::clog << "Content: " << elem->id << " stored at " << path << std::endl;
-					} else {
-						std::clog << "Skipping: " << elem->kind <<", " << elem->id << ", " << elem->subreddit << ", " << elem->url << std::endl;
-						std::clog << "Reason: " << "MIME type is not an image" << std::endl;
-
-						std::cout << "Skipping: " << elem->kind <<", " << elem->id << ", " << elem->subreddit << ", " << elem->url << std::endl;
-						std::cout << "Reason: " << "MIME type is not an image" << std::endl;
 					}
 					if (res[1] == "zip" && imgur_album) {
 						std::ofstream(path + elem->id + ".zip", std::ios::binary) << data;
@@ -647,7 +672,9 @@ bool Saver::scan_cmd(int argc, char* argv[])
 				<< "	-sb/ -sortby [subreddit,title,id or unsorted] : Arranges the media downloaded based on the selected sort" << std::endl
 				<< "	-r/-reverse reverses : the list of saved items" << std::endl
 				<< "	-uw [user,user] : Enable whitelisting users" << std::endl
-				<< "	-ub	[user,user] : Enable blacklisting of users" << std::endl;
+				<< "	-ub	[user,user] : Enable blacklisting of users" << std::endl
+				<< "  -bd [domain,domain] : Enable blacklisting of domain names" << std::endl
+				<< "  -bw [domain,domain] : Enable whitelisting of domain names" << std::endl;
 			return false;
 		}
 		else if (arg == "-v" || arg == "-version") {
@@ -756,6 +783,37 @@ bool Saver::scan_cmd(int argc, char* argv[])
 				args.uwhitelist.push_back(argv[i + 1]);
 			}
 			for (auto& elem : args.uwhitelist)
+				boost::algorithm::to_lower(elem);
+			i++;
+		}
+		else if(arg == "-bd") {
+			if (i + 1 >= argc) {
+				std::cout << "Second argument for -bd options not present" << std::endl;
+				return false;
+			}
+			if (std::string comma_check = argv[i + 1]; comma_check.rfind(",") != std::string::npos) {
+
+				boost::split(args.dblacklist, argv[i + 1], boost::algorithm::is_any_of(","));
+			}
+			else {
+				args.dblacklist.push_back(argv[i + 1]);
+			}
+			for (auto& elem : args.ublacklist)
+				boost::algorithm::to_lower(elem);
+			i++;
+		} else if(arg == "-wd") {
+			if (i + 1 >= argc) {
+				std::cout << "Second argument for -wd options not present" << std::endl;
+				return false;
+			}
+			if (std::string comma_check = argv[i + 1]; comma_check.rfind(",") != std::string::npos) {
+
+				boost::split(args.dwhitelist, argv[i + 1], boost::algorithm::is_any_of(","));
+			}
+			else {
+				args.dwhitelist.push_back(argv[i + 1]);
+			}
+			for (auto& elem : args.dwhitelist)
 				boost::algorithm::to_lower(elem);
 			i++;
 		}

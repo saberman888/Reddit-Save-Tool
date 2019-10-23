@@ -65,7 +65,7 @@ bool RedditAccess::load_login_info()
 		creds["accounts"] = nlohmann::json::array();
 		nlohmann::json account = {{ "client_id" ,"cid_here" }, { "secret","secret_here" }, { "username" , "username_here" }, { "password","password_here" }, { "user_agent", "useragent_here" }};
 		creds["accounts"].push_back(account);
-		creds["imgur"] = {{"client_id","cid_here"}, {"secret","secret_here"}};
+		creds["imgur"] = {{"client_id","ac_here"}};
 		info << creds.dump(4);
 		std::cout << "Could not find settings.json" << std::endl;
 		std::clog << "Recreating settings.json" << std::endl;
@@ -90,7 +90,7 @@ bool RedditAccess::load_login_info()
 
 
 				this->accounts.push_back(acs);
-			}
+				}
 			catch (nlohmann::json::out_of_range& e) {
 				std::clog << e.what() << std::endl;
 			}
@@ -125,9 +125,9 @@ bool RedditAccess::load_login_info()
 		try {
 			auto imgur = root.at("imgur");
 
-			this->Account->imgur_client_id = imgur.at("client_id").get<std::string>();
-			this->Account->imgur_secret = imgur.at("secret").get<std::string>();
+			this->imgur_client_id = imgur.at("client_id").get<std::string>();
 			this->imgur_enabled = true;
+			std::cout << "Imgur support loaded." << std::endl;
 		} catch(nlohmann::json::exception&) {
 			this->imgur_enabled = false;
 			std::cout << "Warning: Imgur albums will only be downloaded as a zip." << std::endl;
@@ -306,61 +306,63 @@ void RedditAccess::tick()
 	std::clog << "Requests done in current minute: " << this->request_done_in_current_minute << std::endl;
 }
 
-State RedditAccess::authorize_imgur()
+State RedditAccess::retrieve_imgur_image(std::string imghash, std::string& URL)
 {
-	State response;
+	CURL* handle;
 	CURLcode result;
-	CURL *handle;
-	int http_code;
-	std::string data;
-	struct curl_slist* header = nullptr;
+	State s;
+	std::string rdata, hd; // return rdata and header data, hd
 
 	handle = curl_easy_init();
+
 	if(handle)
 	{
 		curl_global_init(CURL_GLOBAL_ALL);
-		std::string authorization_header = "Authorization: Client-ID ";
-		authorization_header += Account->imgur_client_id;
-		header = curl_slist_append(header, authorization_header.c_str());
-
-		curl_easy_setopt(handle, CURLOPT_URL, "https://api.imgur.com/oauth2/authorize");
+		curl_slist* header = nullptr;
+		std::string sheader = "Authorization: Client-ID " + imgur_client_id;
+		header = curl_slist_append(header, sheader.c_str());
+		std::string _URL = "https://api.imgur.com/3/image/" + std::string(imghash);
+		curl_easy_setopt(handle, CURLOPT_URL, _URL.c_str());
 		curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header);
 		curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
-		std::string params = "client_id=" + Account->imgur_client_id + "&response_type=token&state=RSA";
-		#if defined(_DEBUG)
-		std::clog << "Imgur: " << params << std::endl;
-		std::cout << "Imgur: " << params << std::endl;
-		#endif
-		//curl_easy_setopt(handle, CURLOPT_POSTFIELDS, params.c_str());
+		curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, &writedat);
-		curl_easy_setopt(handle, CURLOPT_WRITEDATA, &data);
-		curl_easy_setopt(handle, CURLOPT_POST, 1L);
-		#if defined(_DEBUG)
+		curl_easy_setopt(handle, CURLOPT_WRITEDATA, &rdata);
 		curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
-		#endif
-
+		curl_easy_setopt(handle, CURLOPT_HEADERDATA, &hd);
 		result = curl_easy_perform(handle);
 
-		curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http_code);
-		curl_easy_cleanup(handle);
+		curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &s.http_state);
 		curl_global_cleanup();
+		curl_easy_cleanup(handle);
 		curl_free(header);
-		#if defined(_DEBUG)
-		QFIO("imgur_access.txt", data);
+
+		#ifdef _DEBUG
+		QFIO(this->logpath + std::string("/imgur_image_" + imghash + std::string(".txt")), rdata);
 		#endif
 
-		response.http_state = http_code;
-		response.message = "";
+		QFIO(this->logpath + std::string("/imgur_header_") + imghash + std::string(".txt"), hd);
+
 		if(result != CURLE_OK)
 		{
-			response.message = curl_easy_strerror(result);
+			s.message = curl_easy_strerror(result);
+		} else {
+			nlohmann::json root;
+			try {
+				root = nlohmann::json::parse(rdata);
 
+				URL = root.at("data").at("link").get<std::string>();
+				s.http_state = root.at("status").get<int>();
+				s.message = "";
+			} catch(nlohmann::json::exception& e) {
+				s.message = e.what();
+				s.http_state = root.at("status").get<int>();
+			}
 		}
 
 	} else {
-		response.message = "Failed to load libcurl handle!";
-		response.http_state = -1;
-		return response;
+		s.message = "Failed to load libcurl handle!";
+		s.http_state = -1;
 	}
-	return response;
+	return s;
 }

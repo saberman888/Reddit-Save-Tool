@@ -80,13 +80,12 @@ public:
 	bool EnableImages, EnableText, DisableComments, RHA, reverse;
 	int limit;
 	std::string username;
-	std::vector<std::string> whitelist, blacklist, uwhitelist, ublacklist;
+	std::vector<std::string> whitelist, blacklist, uwhitelist, ublacklist, dblacklist, dwhitelist;
 	Sort sort;
 };
 
 struct creds {
 	std::string username, password, client_id, secret, user_agent;
-	std::string imgur_client_id, imgur_secret;
 };
 
 // Item holds items from user's saved
