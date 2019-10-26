@@ -445,8 +445,6 @@ void Saver::download_content(std::vector<Item*> i)
 
 	for (size_t j = 0; j < (unsigned)args.limit; j++) {
 		Item *elem = i[j];
-		bool imgur_album = false;
-		bool imgur = false;
 
 		#ifdef _DEBUG
 		std::cout << elem->url << std::endl;
@@ -512,7 +510,8 @@ void Saver::download_content(std::vector<Item*> i)
 		}
 		path += "/";
 
-		if (elem->IsImgurAlbum()){
+		if (elem->IsImgurAlbum())
+		{
 			std::vector<std::string> vih, vai;
 			boost::split(vih, elem->url, boost::is_any_of("/"));
 
@@ -526,7 +525,7 @@ void Saver::download_content(std::vector<Item*> i)
 			}
 			std::string dest = path + elem->title;
 			std::string fn;
-			std::cout << "Retrieving imgur album: " << hash << " from " << elem->subreddit << std::endl;
+			std::cout << "Retrieving imgur album: " << elem->url << " from " << elem->subreddit << std::endl;
 			for(int i = 0; i < vai.size(); i++)
 			{
 				std::vector<std::string> _vih;
@@ -539,8 +538,9 @@ void Saver::download_content(std::vector<Item*> i)
 					std::cout << "Error failed to retrieve " << i << " of " << vai.size() << std::endl;
 					std::cout << "Reason: " << res.message << std::endl;
 				}
-				std::cout << "Retrieving: " << i << " of " << vai.size() << "\r" << std::endl;
+				std::cout << "Retrieving: " << i << " of " << vai.size() << std::endl;
 			}
+			std::cout << std::endl;
 		} else if( elem->IsImgurLink() && imgur_enabled) {
 			std::string url = elem->url;
 			std::clog << "Retrieving Imgur image: " << url << std::endl;
@@ -610,7 +610,7 @@ void Saver::download_content(std::vector<Item*> i)
 				std::vector<std::string> res;
 				boost::split(res, ct, boost::is_any_of("/"));
 				if (args.EnableImages) {
-					if ((res[0] == "image" || imgur) && !fs::exists(path)) {
+					if ((res[0] == "image") && !fs::exists(path)) {
 						try {
 							fs::create_directories(path);
 						}
@@ -623,10 +623,7 @@ void Saver::download_content(std::vector<Item*> i)
 					if (res[0] == "image") {
 						std::ofstream(path + elem->id + "." + res[1], std::ios::binary) << data;
 						std::clog << "Content: " << elem->id << " stored at " << path << std::endl;
-					}
-					if (imgur_album) {
-						std::ofstream(path + elem->id + ".zip", std::ios::binary) << data;
-						std::clog << "Content: " << elem->id << " stored at " << path << std::endl;
+						std::cout << "Retrieving content: " << elem->url << " from " << elem->permalink << std::endl;
 					}
 				}
 				if (args.EnableText) {
@@ -655,6 +652,7 @@ void Saver::download_content(std::vector<Item*> i)
 						else{
 							out << elem->orig_self_text << std::endl;
 						}
+						std::cout << "Retrieving content: " << elem->permalink << std::endl;
 
 					}
 

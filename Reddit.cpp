@@ -327,7 +327,9 @@ State RedditAccess::retrieve_imgur_image(std::string imghash, std::string& URL)
 		curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, &writedat);
 		curl_easy_setopt(handle, CURLOPT_WRITEDATA, &rdata);
+		#ifdef _DEBUG
 		curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
+		#endif
 		curl_easy_setopt(handle, CURLOPT_HEADERDATA, &hd);
 		result = curl_easy_perform(handle);
 
@@ -389,7 +391,9 @@ State RedditAccess::retrieve_album_images(std::string albumhash, std::vector<std
 	 	 curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
 	 	 curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, &writedat);
 	 	 curl_easy_setopt(handle, CURLOPT_WRITEDATA, &rdata);
+		 #ifdef _DEBUG
 	 	 curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
+		 #endif
 	 	 curl_easy_setopt(handle, CURLOPT_HEADERDATA, &hd);
 
 		 result = curl_easy_perform(handle);
@@ -447,6 +451,9 @@ State RedditAccess::download_item(const char* URL, std::string dest, std::string
 		curl_easy_setopt(handle, CURLOPT_WRITEDATA, &rdata);
 		curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(handle, CURLOPT_HEADERDATA, &hd);
+		#ifdef _DEBUG
+		curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
+		#endif
 
 		result = curl_easy_perform(handle);
 		curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &s.http_state);
