@@ -26,6 +26,8 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <pwd.h>
+#else
+#include <Synchapi.h>
 #endif
 
 class RedditAccess {
@@ -92,8 +94,9 @@ public:
 	// Imgur credentials
 	std::string imgur_client_id;
 	bool imgur_enabled;
-	State retrieve_album_images(std::string album_id);
+	State retrieve_album_images(std::string album_id, std::vector<std::string>& URLs);
 	State retrieve_imgur_image(std::string imghash, std::string& URL);
+	State download_item(const char* URL, std::string dest, std::string fn);
 
 
 };
