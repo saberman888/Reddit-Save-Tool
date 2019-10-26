@@ -502,8 +502,12 @@ void Saver::download_content(std::vector<Item*> i)
 			path += elem->id;
 			break;
 		case Title:
+		{
+			if(elem->title.size() > 255)
+				elem->title.resize(255);
 			path += stripfname(elem->title);
 			break;
+		}
 		default:
 			// Unsorted
 			break;
@@ -523,6 +527,10 @@ void Saver::download_content(std::vector<Item*> i)
 				std::cout << "Error: Failed to retrieve Imgur album URLs, " << iam.message << std::endl;
 				continue;
 			}
+
+			if(elem->title.size() > 255)
+				elem->title.resize(255);
+
 			std::string dest = path + elem->title;
 			std::string fn;
 			std::cout << "Retrieving imgur album: " << elem->url << " from " << elem->subreddit << std::endl;
