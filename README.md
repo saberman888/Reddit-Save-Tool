@@ -53,6 +53,8 @@ Run RSA without any flags if you want everything thats scanned
 		-r/-reverse: reverse the list of items collected from save
     -uw [user,user]: Enable whitelisting users
     -ub	[user,user]: Enable blacklisting of users
+    -bd [domain,domain] : Enable blacklisting of domain names
+    -bw [domain,domain] : Enable whitelisting of domain names
 ```
 
 ## Known Issues / Notes
