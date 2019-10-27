@@ -1,6 +1,6 @@
 #pragma once
 
-#include "curl/curl.h"
+
 #include <vector>
 #include <iosfwd>
 #include <sstream>
@@ -11,17 +11,26 @@
 #include <cctype>
 #include <algorithm>
 #include <iterator>
+#include <map>
+
+#include "curl/curl.h"
 #include "boost/algorithm/string.hpp"
 #include "base.hpp"
-#include <map>
-#ifdef _MSC_VER
-#include <filesystem>
-#elif defined(__GNUC__) && !(defined(__MINGW64__) || defined(__MINGW32__))
-#include <experimental/filesystem>
-#else
-#include <filesystem>
-#endif
 #include "Reddit.hpp"
+
+#if defined(__cpp_lib_filesystem)
+	#include <filesystem>
+	namespace fs = std::filesystem;
+#elif defined(__cpp_lib_experimental_filesystem)
+	#include <experimental/filesystem>
+	namespace fs = std::experimental::filesystem;
+#elif defined(USE_EXP_FS)
+	#include <experimental/filesystem>
+	namespace fs = std::experimental::filesystem;
+#else
+	#error "No filesystem support found :("
+#endif
+
 
 class Saver : public RedditAccess
 {
@@ -34,12 +43,10 @@ public:
 	void WriteLinkCSV(std::vector<Item*> src, std::vector<std::string> filter) { write_links(src, filter); }
 	bool write_links(std::vector<Item*> src, std::vector<std::string> subfilter);
 	void download_content(std::vector<Item*> i);
-	bool posts_only;
-	bool comments_only;
 
 private:
-
-	State get_saved_items(std::vector< Item* >& sitem, std::string after, bool get_comments);
+	//State loadcheck(std::vector<Item*>& items);
+	State get_saved_items(std::vector< Item* >& sitem, std::string after);
 	State retrieve_comments(Item* i);
 
 

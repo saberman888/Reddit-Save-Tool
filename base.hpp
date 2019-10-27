@@ -46,11 +46,13 @@ size_t writedat(char* buffer, size_t size, size_t nmemb, std::string& src);
 // Convert unix epoch time to real date time
 std::string to_realtime(long timestamp);
 
-typedef struct _State
+class State
 {
-	int http_state;
-	std::string message;
-}State;
+public:
+		int http_state;
+		std::string message;
+		State();
+};
 
 typedef struct _com
 {
@@ -80,7 +82,7 @@ public:
 	bool EnableImages, EnableText, DisableComments, RHA, reverse;
 	int limit;
 	std::string username;
-	std::vector<std::string> whitelist, blacklist, uwhitelist, ublacklist;
+	std::vector<std::string> whitelist, blacklist, uwhitelist, ublacklist, dblacklist, dwhitelist;
 	Sort sort;
 };
 
@@ -115,4 +117,6 @@ typedef struct _Item
 	bool IsVideo();
 	// This function quickly checks if a url is an imaged based off the domain name, and it is used for stats not to really determine if it seriously is an image
 	bool IsPossibleImage();
+	bool IsImgurLink();
+	bool IsImgurAlbum();
 }Item;

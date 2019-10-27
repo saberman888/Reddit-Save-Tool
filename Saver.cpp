@@ -2,7 +2,7 @@
 #include <iostream>
 
 
-State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after, bool get_comments)
+State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after)
 {
 	std::clog << "Getting saved items" << std::endl;
 	CURL *handle;
@@ -168,8 +168,6 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after, boo
 							it->rha_permalink = it->permalink;
 							it->rha_permalink.replace(0, it->subreddit.size() + 3, "/r/" + Account->username);
 						}
-						if(get_comments)
-							RetrieveComments(it);
 
 						sitem.push_back(it);
 						std::clog << it->permalink << std::endl;
@@ -259,7 +257,7 @@ State Saver::retrieve_comments(Item* i)
 			}
 			else {
 
-				JQFIO(logpath + "json\\comments_" + i->id + ".json", jresponse);
+				JQFIO(logpath + "/comments_" + i->id + ".json", jresponse);
 				std::clog << "Parsing comments... " << std::endl;
 				nlohmann::json root = nlohmann::json::parse(jresponse);
 
@@ -447,38 +445,139 @@ void Saver::download_content(std::vector<Item*> i)
 
 	for (size_t j = 0; j < (unsigned)args.limit; j++) {
 		Item *elem = i[j];
-		bool imgur_album = false;
+
+		#ifdef _DEBUG
+		std::cout << elem->url << std::endl;
+		#endif
 
  		if(std::vector<std::string>::iterator whitelist_it = std::find(std::begin(args.whitelist), std::end(args.whitelist), elem->subreddit); (whitelist_it == std::end(args.whitelist)) && (!args.whitelist.empty()))
 		{
 			std::clog << "Skipping: " << elem->kind << ", " << elem->id << ", " << elem->permalink << ", "<< elem->url << ", " << elem->author << std::endl;
-			std::clog << "Reason: Username/Subreddit was on a blacklist or whitelist" << std::endl;
+			std::clog << "Reason: Username/Subreddit was on a whitelist" << std::endl;
 			continue;
 		}
 
 		if(std::vector<std::string>::iterator blacklist_it = std::find(std::begin(args.blacklist), std::end(args.blacklist), elem->subreddit); blacklist_it != std::end(args.blacklist))
 		{
 			std::clog << "Skipping: " << elem->kind << ", " << elem->id << ", " << elem->permalink << ", "<< elem->url << ", " << elem->author << std::endl;
-			std::clog << "Reason: Username/Subreddit was on a blacklist or whitelist" << std::endl;
+			std::clog << "Reason: Username/Subreddit was on a blacklist" << std::endl;
 			continue;
 		}
 
 		if(std::vector<std::string>::iterator user_whitelist_it = std::find(std::begin(args.uwhitelist), std::end(args.uwhitelist), elem->author); (user_whitelist_it == std::end(args.uwhitelist)) && (!args.uwhitelist.empty()))
 		{
 			std::clog << "Skipping: " << elem->kind << ", " << elem->id << ", " << elem->permalink << ", "<< elem->url << ", " << elem->author << std::endl;
-			std::clog << "Reason: Username/Subreddit was on a blacklist or whitelist" << std::endl;
+			std::clog << "Reason: Username/Subreddit was on a whitelist" << std::endl;
 			continue;
 		}
 
 		if(std::vector<std::string>::iterator user_blacklist_it = std::find(std::begin(args.ublacklist), std::end(args.ublacklist), elem->author); (user_blacklist_it != std::end(args.ublacklist)) && (!args.ublacklist.empty()))
 		{
 			std::clog << "Skipping: " << elem->kind << ", " << elem->id << ", " << elem->permalink << ", "<< elem->url << ", " << elem->author << std::endl;
-			std::clog << "Reason: Username/Subreddit was on a blacklist or whitelist" << std::endl;
+			std::clog << "Reason: Username/Subreddit was on a blacklist" << std::endl;
 			continue;
 		}
 
-		if (elem->url.rfind("imgur.com/a/", 0) != std::string::npos)
-			imgur_album = true;
+		if(std::vector<std::string>::iterator domain_whitelist_it = std::find(std::begin(args.dwhitelist), std::end(args.dwhitelist), elem->domain); (domain_whitelist_it == std::end(args.dwhitelist)) && (!args.dwhitelist.empty()))
+		{
+			std::clog << "Skipping: " << elem->kind << ", " << elem->id << ", " << elem->permalink << ", "<< elem->url << ", " << elem->author << std::endl;
+			std::clog << "Reason: Domain was on a whitelist" << std::endl;
+			continue;
+		}
+
+		if(std::vector<std::string>::iterator domain_blacklist_it = std::find(std::begin(args.dblacklist), std::end(args.dblacklist), elem->domain); (domain_blacklist_it != std::end(args.dblacklist)) && (!args.dblacklist.empty()))
+		{
+			std::clog << "Skipping: " << elem->kind << ", " << elem->id << ", " << elem->permalink << ", "<< elem->url << ", " << elem->author << std::endl;
+			std::clog << "Reason: Domain was on a blacklist" << std::endl;
+			continue;
+		}
+
+		std::string path = this->mediapath;
+		switch (args.sort)
+		{
+		case Subreddit:
+			path += elem->subreddit;
+			break;
+		case ID:
+			path += elem->id;
+			break;
+		case Title:
+		{
+			if(elem->title.size() > 255)
+				elem->title.resize(255);
+			path += stripfname(elem->title);
+			break;
+		}
+		default:
+			// Unsorted
+			break;
+		}
+		path += "/";
+
+		if (elem->IsImgurAlbum())
+		{
+			std::vector<std::string> vih, vai;
+			boost::split(vih, elem->url, boost::is_any_of("/"));
+
+			std::string hash = vih[4];
+
+			State iam = retrieve_album_images(hash,vai);
+			if(iam.http_state != 200)
+			{
+				std::cout << "Error: Failed to retrieve Imgur album URLs, " << iam.message << std::endl;
+				continue;
+			}
+
+			if(elem->title.size() > 255)
+				elem->title.resize(255);
+
+			std::string dest = path + elem->title;
+			std::string fn;
+			std::cout << "Retrieving imgur album: " << elem->url << " from " << elem->subreddit << std::endl;
+			for(int i = 0; i < vai.size(); i++)
+			{
+				std::vector<std::string> _vih;
+				boost::split(_vih, vai[i], boost::is_any_of("/"));
+				fn = std::to_string(i) + "_" + _vih[3];
+
+				State res = download_item(vai[i].c_str(), dest, fn);
+				if(res.http_state != 200)
+				{
+					std::cout << "Error failed to retrieve " << i << " of " << vai.size() << std::endl;
+					std::cout << "Reason: " << res.message << std::endl;
+				}
+				std::cout << "Retrieving: " << i << " of " << vai.size() << std::endl;
+			}
+			std::cout << std::endl;
+		} else if( elem->IsImgurLink() && imgur_enabled) {
+			std::string url = elem->url;
+			std::clog << "Retrieving Imgur image: " << url << std::endl;
+			if(elem->IsPossibleImage()){
+				// strip the extension from the urls
+				std::string urls[] = {".jpeg", ".bmp", ".png", ".gif", ".jpg", ".tiff" };
+				for(std::string elem : urls)
+					boost::erase_all(url, elem);
+			}
+			std::vector<std::string> surl;
+			boost::split(surl, url, boost::is_any_of("/"));
+
+			#ifdef _DEBUG
+			std::clog << "Imgur hash: " << surl[3] << std::endl;
+			std::cout << "Imgur hash: " << surl[3] << std::endl;
+			#endif
+
+			State res = retrieve_imgur_image(surl[3], url);
+			if(res.http_state != 200)
+			{
+				std::cout << "Error failed to retrieve imgur image!" << std::endl;
+				std::cout << "Reason: " << res.message << std::endl;
+
+				std::clog << "Error failed to retrieve imgur image!" << std::endl;
+				std::clog << "Reason: " << res.message << std::endl;
+			} else {
+				elem->url = url;
+			}
+		}
 
 		CURL* handle;
 		CURLcode result;
@@ -503,38 +602,23 @@ void Saver::download_content(std::vector<Item*> i)
 			curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &s.http_state);
 			curl_easy_getinfo(handle, CURLINFO_CONTENT_TYPE, &ct);
 			QFIO(this->logpath + "content_download_" + elem->id + ".txt", hd);
-			std::string path = this->mediapath;
 
 			if(result != CURLE_OK)
 			{
-				std::cerr << curl_easy_strerror(result) << std::endl;
-				std::cout << "Skipping: " << elem->kind <<", " << elem->id << ", " << elem->url << std::endl;
+				std::cout << "Skipping: " << elem->kind <<", " << elem->id << ", " << elem->subreddit << ", " << elem->url << std::endl;
+				std::cerr << "Reason: " << curl_easy_strerror(result) << std::endl;
 				continue;
 			}
 
-			switch (args.sort)
-			{
-			case Subreddit:
-				path += elem->subreddit;
-				break;
-			case ID:
-				path += elem->id;
-				break;
-			case Title:
-				path += stripfname(elem->title);
-				break;
-			default:
-				// Unsorted
-				break;
-			}
-			path += "/";
-
 			if (s.http_state == 200) {
+
+				if(!args.DisableComments)
+					RetrieveComments(elem);
 
 				std::vector<std::string> res;
 				boost::split(res, ct, boost::is_any_of("/"));
 				if (args.EnableImages) {
-					if ((res[0] == "image" || res[1] == "zip") && !fs::exists(path)) {
+					if ((res[0] == "image") && !fs::exists(path)) {
 						try {
 							fs::create_directories(path);
 						}
@@ -547,10 +631,7 @@ void Saver::download_content(std::vector<Item*> i)
 					if (res[0] == "image") {
 						std::ofstream(path + elem->id + "." + res[1], std::ios::binary) << data;
 						std::clog << "Content: " << elem->id << " stored at " << path << std::endl;
-					}
-					else if (res[1] == "zip" && imgur_album) {
-						std::ofstream(path + elem->id + ".zip", std::ios::binary) << data;
-						std::clog << "Content: " << elem->id << " stored at " << path << std::endl;
+						std::cout << "Retrieving content: " << elem->url << " from " << elem->permalink << std::endl;
 					}
 				}
 				if (args.EnableText) {
@@ -579,6 +660,7 @@ void Saver::download_content(std::vector<Item*> i)
 						else{
 							out << elem->orig_self_text << std::endl;
 						}
+						std::cout << "Retrieving content: " << elem->permalink << std::endl;
 
 					}
 
@@ -640,7 +722,9 @@ bool Saver::scan_cmd(int argc, char* argv[])
 				<< "	-sb/ -sortby [subreddit,title,id or unsorted] : Arranges the media downloaded based on the selected sort" << std::endl
 				<< "	-r/-reverse reverses : the list of saved items" << std::endl
 				<< "	-uw [user,user] : Enable whitelisting users" << std::endl
-				<< "	-ub	[user,user] : Enable blacklisting of users" << std::endl;
+				<< "	-ub	[user,user] : Enable blacklisting of users" << std::endl
+				<< "  -bd [domain,domain] : Enable blacklisting of domain names" << std::endl
+				<< "  -bw [domain,domain] : Enable whitelisting of domain names" << std::endl;
 			return false;
 		}
 		else if (arg == "-v" || arg == "-version") {
@@ -752,6 +836,37 @@ bool Saver::scan_cmd(int argc, char* argv[])
 				boost::algorithm::to_lower(elem);
 			i++;
 		}
+		else if(arg == "-bd") {
+			if (i + 1 >= argc) {
+				std::cout << "Second argument for -bd options not present" << std::endl;
+				return false;
+			}
+			if (std::string comma_check = argv[i + 1]; comma_check.rfind(",") != std::string::npos) {
+
+				boost::split(args.dblacklist, argv[i + 1], boost::algorithm::is_any_of(","));
+			}
+			else {
+				args.dblacklist.push_back(argv[i + 1]);
+			}
+			for (auto& elem : args.ublacklist)
+				boost::algorithm::to_lower(elem);
+			i++;
+		} else if(arg == "-wd") {
+			if (i + 1 >= argc) {
+				std::cout << "Second argument for -wd options not present" << std::endl;
+				return false;
+			}
+			if (std::string comma_check = argv[i + 1]; comma_check.rfind(",") != std::string::npos) {
+
+				boost::split(args.dwhitelist, argv[i + 1], boost::algorithm::is_any_of(","));
+			}
+			else {
+				args.dwhitelist.push_back(argv[i + 1]);
+			}
+			for (auto& elem : args.dwhitelist)
+				boost::algorithm::to_lower(elem);
+			i++;
+		}
 		else {
 			std::cerr << "Error, unkown command: " << argv[i] << std::endl;
 			std::cout << "Try -h or --help for a list of commands" << std::endl;
@@ -787,7 +902,7 @@ State Saver::AccessPosts(std::vector< Item* >& saved)
 		is_mtime_up();
 		if (!is_time_up())
 		{
-			s = get_saved_items(saved, after, args.DisableComments);
+			s = get_saved_items(saved, after);
 		}
 		else {
 			State res = obtain_token(true);
@@ -796,7 +911,7 @@ State Saver::AccessPosts(std::vector< Item* >& saved)
 				return res;
 			}
 			else {
-				s = get_saved_items(saved, after, args.DisableComments);
+				s = get_saved_items(saved, after);
 			}
 		}
 		if(s.http_state != 200)
@@ -805,3 +920,8 @@ State Saver::AccessPosts(std::vector< Item* >& saved)
 	std::cout << "Total saved items: " << saved.size() << std::endl;
 	return s;
 }
+/*
+State Saver::loadcheck(std::vector<Item*>& items)
+{
+	// TODO: Implement loadcheck, a function that checks if a comment tree needs further processing
+}*/
