@@ -4,11 +4,20 @@ Reddit-Save-Archiver is a Reddit tool where it saves posts, comments, pictures t
 
 ## Building RSA/RST
 
-Building RSA is relatively simple by just configuring cmake to your preffered compiler/platform and compiling it through the generated Makefile:
+For most people compiling RSA can be accomplished by running cmake then make.
 
 ```
 cmake -G "COMPILER_HERE"
+make
 ```
+
+However for some compilers, the -DUSE_EXP_FS=1 flag is needed. This is because the way RSA detects <filesystem> may not work for some compilers.
+
+```
+cmake -G "COMPILER_HERE" -DUSE_EXP_FS=1
+```
+
+Another cmake option you can add, is the USE_HOME_DIR. This flag stores media and logs in ~/RSA/ on Linux.
 
 ### RSA depends on:
 1. Boost's headers
@@ -29,7 +38,11 @@ Before you start RSA, you need to setup your credentials from https://www.reddit
             "user_agent": "useragent_here",
             "username": "username_here"
         }
-    ]
+    ],
+    "imgur" : {
+      "client_id": "cid"
+    }
+
 }
 
 ```
@@ -66,5 +79,4 @@ Run RSA without any flags if you want everything thats scanned
 
 1. Fix the aformentioned issues
 2. Add more options for directory structure E.g /Sub/Post_tite/[Content]
-2. Add things like author, permalink and etc to the text files
 3. Create GUI for RSA
