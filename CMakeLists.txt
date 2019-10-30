@@ -21,7 +21,7 @@ if(DEBUG)
 else(RELEASE)
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/release)
 endif()
-add_compile_options(-DVERSION="2019.9.15")
+add_compile_options(-DVERSION="2019.10.27")
 
 add_executable(reddit-save-archiver base.cpp Reddit.cpp Saver.cpp Source.cpp)
 
