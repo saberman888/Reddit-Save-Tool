@@ -11,7 +11,7 @@ cmake -G "COMPILER_HERE"
 make
 ```
 
-However for some compilers, the -DUSE_EXP_FS=1 flag is needed. This is because the way RSA detects <filesystem> may not work for some compilers.
+However for some compilers, the -DUSE_EXP_FS=1 flag is needed. This is because the way RSA detects std::filesystem may not work for some compilers.
 
 ```
 cmake -G "COMPILER_HERE" -DUSE_EXP_FS=1
@@ -69,6 +69,10 @@ Run RSA without any flags if you want everything thats scanned
     -bd [domain,domain] : Enable blacklisting of domain names
     -bw [domain,domain] : Enable whitelisting of domain names
 ```
+
+## Imgur on RSA/RST
+As of October 27, RSA is able to download albums and images. This can be enabled by adding a client id in settings.json
+To get this ID, go to your Applications in your account settings on Imgur and register RSA.
 
 ## Known Issues / Notes
 
