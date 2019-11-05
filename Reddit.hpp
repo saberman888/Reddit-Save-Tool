@@ -97,6 +97,15 @@ public:
 	State retrieve_album_images(std::string album_id, std::vector<std::string>& URLs);
 	State retrieve_imgur_image(std::string imghash, std::string& URL);
 	State download_item(const char* URL, std::string dest, std::string fn);
+	/*
 
+	QFIO and JQFIO output text such as json responses into a file
+
+	QFIO is just for normal stuff like the header of a request while JQFIO is specifically for JSON
+	it parses it in nlohmann json first then pretty prints it to a file, but if it fails it just outputs normally to a file without pretty print
+
+	*/
+	void QFIO(std::string filename, std::string data);
+	void JQFIO(std::string filename, std::string json);
 
 };
