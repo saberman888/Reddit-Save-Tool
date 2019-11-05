@@ -80,6 +80,7 @@ To get this ID, go to your Applications in your account settings on Imgur and re
 
 1. Not really an issues/bug, but RSA doesn't support downloading video, but I want to try to support it in the future
 2. The -RHA option doesn't always work when processing a large scale of items, but I could be wrong, it might not work at all.
+3. It's important to know that, the ability to retrieve full comment threads is not fully implemented.
 
 ## Things I plan to do to RSA/RST
 
