@@ -53,10 +53,8 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after)
 			curl_free(header);
 
 			tick();
-#ifdef _DEBUG
 			QFIO(logpath + "saved_header_data_" + std::to_string(requests_done) +".txt", hresponse);
 			JQFIO(logpath + "saved_json_data_" + std::to_string(requests_done) + ".txt", jresponse);
-#endif
 
 			if (result != CURLE_OK)
 			{
@@ -256,7 +254,6 @@ State Saver::retrieve_comments(Item* i)
 				response.message = curl_easy_strerror(result);
 			}
 			else {
-
 				JQFIO(logpath + "/comments_" + i->id + ".json", jresponse);
 				std::clog << "Parsing comments... " << std::endl;
 				nlohmann::json root = nlohmann::json::parse(jresponse);
