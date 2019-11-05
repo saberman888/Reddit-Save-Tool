@@ -54,7 +54,7 @@ class CMDArgs{
 public:
 	CMDArgs();
 	//bool OnlyImages, OnlyText, EnableImages, Everything, EnableComments, EnableText, rha, xlist;
-	bool EnableImages, EnableText, DisableComments, RHA, reverse, VideosEnabled, Verbose;
+	bool EnableImages, EnableText, DisableComments, RHA, reverse, VideosEnabled, Verbose, EnableCommentThreads;
 	int limit;
 	std::string username;
 	std::vector<std::string> whitelist, blacklist, uwhitelist, ublacklist, dblacklist, dwhitelist;

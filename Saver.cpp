@@ -609,7 +609,7 @@ void Saver::download_content(std::vector<Item*> i)
 
 			if (s.http_state == 200) {
 
-				if(!args.DisableComments)
+				if(!args.EnableCommentThreads)
 					RetrieveComments(elem);
 
 				std::vector<std::string> res;
@@ -710,7 +710,8 @@ bool Saver::scan_cmd(int argc, char* argv[])
 				<< "	-a [ACCOUNT] : Load specific account" << std::endl
 				<< "	-t : Disable text" << std::endl
 				<< "	-e : Get everything" << std::endl
-				<< "	-dc : Disable comments" << std::endl
+				<< "	-dc : Disable single comments" << std::endl
+				<< "	-ect : Enable the retrieval of comment threads" << std::endl
 				<< "	-l[limit] : Sets the limit of the number of comments, the default being 250 items" << std::endl
 				<< "	-rha : Enable reddit - html - archiver output" << std::endl
 				<< "	-v / --version : Get version" << std::endl
