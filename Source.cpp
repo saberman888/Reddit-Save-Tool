@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
 	}
 
 	std::cout << "Processed: " << iv.size() << std::endl;
-	if (s.args.EnableText || s.args.EnableImages) {
+	if (s.args.EnableText || s.args.EnableImages || s.args.VideosEnabled) {
 		std::cout << "Beginning to download content" << std::endl;
 		s.download_content(iv); // TODO: Add sorting options to the commandline arguments
 	}

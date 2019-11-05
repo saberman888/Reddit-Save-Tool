@@ -478,3 +478,27 @@ State RedditAccess::download_item(const char* URL, std::string dest, std::string
 	}
 	return s;
 }
+
+
+void RedditAccess::QFIO(std::string filename, std::string data)
+{
+	if(args.Verbose){
+		std::clog << "Outputting " << filename << std::endl;
+		std::ofstream(filename.c_str(), std::ios::out) << data;
+	}
+}
+
+void RedditAccess::JQFIO(std::string filename, std::string json)
+{
+	if(args.Verbose){
+		nlohmann::json  data;
+		try {
+			data = nlohmann::json::parse(json);
+
+			std::ofstream(filename.c_str(), std::ios::out) << std::setw(4) << data;
+		}
+		catch (nlohmann::json::parse_error&) {
+			std::ofstream(filename.c_str(), std::ios::out) << json;
+		}
+	}
+}

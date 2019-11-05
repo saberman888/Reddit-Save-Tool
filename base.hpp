@@ -11,31 +11,6 @@ constexpr int POST_LIMIT = 1000;
 constexpr int LIMIT_PER_TOKEN = 600;
 constexpr int RQ_PER_MINUTE = 60;
 
-/*
-
-QFIO and JQFIO output text such as json responses into a file
-
-QFIO is just for normal stuff like the header of a request while JQFIO is specifically for JSON
-it parses it in nlohmann json first then pretty prints it to a file, but if it fails it just outputs normally to a file without pretty print
-
-*/
-inline void QFIO(std::string filename, std::string data)
-{
-	std::clog << "Outputting " << filename << std::endl;
-	std::ofstream(filename.c_str(), std::ios::out) << data;
-}
-inline void JQFIO(std::string filename, std::string json)
-{
-	nlohmann::json  data;
-	try {
-		data = nlohmann::json::parse(json);
-
-		std::ofstream(filename.c_str(), std::ios::out) << std::setw(4) << data;
-	}
-	catch (nlohmann::json::parse_error&) {
-		std::ofstream(filename.c_str(), std::ios::out) << json;
-	}
-}
 inline std::string bool2str(bool x) {
 	return (x ? "True" : "False");
 }
@@ -79,7 +54,7 @@ class CMDArgs{
 public:
 	CMDArgs();
 	//bool OnlyImages, OnlyText, EnableImages, Everything, EnableComments, EnableText, rha, xlist;
-	bool EnableImages, EnableText, DisableComments, RHA, reverse;
+	bool EnableImages, EnableText, DisableComments, RHA, reverse, VideosEnabled, Verbose;
 	int limit;
 	std::string username;
 	std::vector<std::string> whitelist, blacklist, uwhitelist, ublacklist, dblacklist, dwhitelist;
@@ -99,9 +74,9 @@ typedef struct _Item
 	std::string body, orig_body, parent_id;
 	std::string subreddit_id;
 	std::string fullname, id, kind;
-	std::string domain, title, self_text, orig_self_text, url, extension;
+	std::string domain, title, self_text, orig_self_text, url, extension, fallback_url, audio_url;
 
-	bool is_self, is_video;
+	bool is_self, is_video, is_gif;
 	bool over_18;
 	//bool retrieved_on;
 	int score;
