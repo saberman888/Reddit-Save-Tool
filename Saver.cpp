@@ -546,7 +546,7 @@ void Saver::download_content(std::vector<Item*> i)
 					std::cout << "Error failed to retrieve " << i << " of " << vai.size() << std::endl;
 					std::cout << "Reason: " << res.message << std::endl;
 				}
-				std::cout << "Retrieving: " << i << " of " << vai.size() << std::endl;
+				std::cout << "Retrieving: " << i+1 << " of " << vai.size() << std::endl;
 			}
 			std::cout << std::endl;
 		} else if( elem->IsImgurLink() && imgur_enabled) {
