@@ -64,10 +64,10 @@ Run RSA without any flags if you want everything thats scanned
 		-v/-version: Version
 		-sb/sortby [sort]: Sorts downloaded media by: title,subreddit,id or unsorted; with the default being subreddit
 		-r/-reverse: reverse the list of items collected from save
-    -uw [user,user]: Enable whitelisting users
-    -ub	[user,user]: Enable blacklisting of users
-    -bd [domain,domain] : Enable blacklisting of domain names
-    -wd [domain,domain] : Enable whitelisting of domain names
+    		-uw [user,user]: Enable whitelisting users
+    		-ub [user,user]: Enable blacklisting of users
+    		-bd [domain,domain] : Enable blacklisting of domain names
+    		-wd [domain,domain] : Enable whitelisting of domain names
 ```
 
 ## Imgur on RSA/RST
