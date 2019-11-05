@@ -709,7 +709,6 @@ bool Saver::scan_cmd(int argc, char* argv[])
 				<< "	-i: Disable images" << std::endl
 				<< "	-a [ACCOUNT] : Load specific account" << std::endl
 				<< "	-t : Disable text" << std::endl
-				<< "	-e : Get everything" << std::endl
 				<< "	-dc : Disable single comments" << std::endl
 				<< "	-ect : Enable the retrieval of comment threads" << std::endl
 				<< "	-l[limit] : Sets the limit of the number of comments, the default being 250 items" << std::endl
@@ -721,8 +720,8 @@ bool Saver::scan_cmd(int argc, char* argv[])
 				<< "	-r/-reverse reverses : the list of saved items" << std::endl
 				<< "	-uw [user,user] : Enable whitelisting users" << std::endl
 				<< "	-ub	[user,user] : Enable blacklisting of users" << std::endl
-				<< "    -bd [domain,domain] : Enable blacklisting of domain names" << std::endl
-				<< "    -bw [domain,domain] : Enable whitelisting of domain names" << std::endl
+				<< "	-bd [domain,domain] : Enable blacklisting of domain names" << std::endl
+				<< "	-bw [domain,domain] : Enable whitelisting of domain names" << std::endl
 				<< "	-vb : Enable output of more logs" << std::endl;
 			return false;
 		}
