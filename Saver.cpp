@@ -709,9 +709,9 @@ bool Saver::scan_cmd(int argc, char* argv[])
 		else if (arg == "-h" || arg == "--help") {
 			std::cout << "Flags:" << std::endl
 
-				<< "	-i: Only images" << std::endl
-				<< "	-a[ACCOUNT] : Load specific account" << std::endl
-				<< "	-t : Only text" << std::endl
+				<< "	-i: Disable images" << std::endl
+				<< "	-a [ACCOUNT] : Load specific account" << std::endl
+				<< "	-t : Disable text" << std::endl
 				<< "	-e : Get everything" << std::endl
 				<< "	-dc : Disable comments" << std::endl
 				<< "	-l[limit] : Sets the limit of the number of comments, the default being 250 items" << std::endl
@@ -723,8 +723,9 @@ bool Saver::scan_cmd(int argc, char* argv[])
 				<< "	-r/-reverse reverses : the list of saved items" << std::endl
 				<< "	-uw [user,user] : Enable whitelisting users" << std::endl
 				<< "	-ub	[user,user] : Enable blacklisting of users" << std::endl
-				<< "  -bd [domain,domain] : Enable blacklisting of domain names" << std::endl
-				<< "  -bw [domain,domain] : Enable whitelisting of domain names" << std::endl;
+				<< "    -bd [domain,domain] : Enable blacklisting of domain names" << std::endl
+				<< "    -bw [domain,domain] : Enable whitelisting of domain names" << std::endl
+				<< "	-vb : Enable output of more logs" << std::endl;
 			return false;
 		}
 		else if (arg == "-v" || arg == "-version") {
@@ -866,6 +867,8 @@ bool Saver::scan_cmd(int argc, char* argv[])
 			for (auto& elem : args.dwhitelist)
 				boost::algorithm::to_lower(elem);
 			i++;
+		} else if(arg == "-vb") {
+			args.Verbose = true;
 		}
 		else {
 			std::cerr << "Error, unkown command: " << argv[i] << std::endl;
