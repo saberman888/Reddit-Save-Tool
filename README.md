@@ -73,7 +73,7 @@ Run RSA without any flags if you want everything thats scanned
 ```
 
 ## Imgur on RSA/RST
-As of October 27, RSA is able to download albums and images. This can be enabled by adding a client id in settings.json
+As of October 27, RSA is able to download albums and images from Imgur using It's API. This can be enabled by adding a client id in settings.json
 To get this ID, go to your Applications in your account settings on Imgur and register RSA.
 
 ## Known Issues / Notes
