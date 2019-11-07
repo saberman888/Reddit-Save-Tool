@@ -714,8 +714,8 @@ bool Saver::scan_cmd(int argc, char* argv[])
 				<< "	-l[limit] : Sets the limit of the number of comments, the default being 250 items" << std::endl
 				<< "	-rha : Enable reddit - html - archiver output" << std::endl
 				<< "	-v / --version : Get version" << std::endl
-				<< "	-whl / -whitelist[sub, sub] : whitelists a patricular sub or user with -uw" << std::endl
-				<< "	-bl / -blacklist[sub, sub] : blackists a paticular sub or user with -uw" << std::endl
+				<< "	-whl / -whitelist[sub, sub] : whitelists a patricular sub or user with -whl" << std::endl
+				<< "	-bl / -blacklist[sub, sub] : blackists a paticular sub or user with -bl" << std::endl
 				<< "	-sb/ -sortby [subreddit,title,id or unsorted] : Arranges the media downloaded based on the selected sort" << std::endl
 				<< "	-r/-reverse reverses : the list of saved items" << std::endl
 				<< "	-uw [user,user] : Enable whitelisting users" << std::endl
