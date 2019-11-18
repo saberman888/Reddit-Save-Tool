@@ -764,8 +764,8 @@ bool Saver::scan_cmd(int argc, char* argv[])
 				<< "	-r/-reverse reverses : the list of saved items" << std::endl
 				<< "	-uw [user,user] : Enable whitelisting users" << std::endl
 				<< "	-ub	[user,user] : Enable blacklisting of users" << std::endl
-				<< "	-bd [domain,domain] : Enable blacklisting of domain names" << std::endl
-				<< "	-bw [domain,domain] : Enable whitelisting of domain names" << std::endl
+				<< "    -bd [domain,domain] : Enable blacklisting of domain names" << std::endl
+				<< "    -bw [domain,domain] : Enable whitelisting of domain names" << std::endl
 				<< "	-vb : Enable output of more logs" << std::endl;
 			return false;
 		}
