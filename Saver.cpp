@@ -53,10 +53,8 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after)
 			curl_free(header);
 
 			tick();
-#ifdef _DEBUG
 			QFIO(logpath + "saved_header_data_" + std::to_string(requests_done) +".txt", hresponse);
 			JQFIO(logpath + "saved_json_data_" + std::to_string(requests_done) + ".txt", jresponse);
-#endif
 
 			if (result != CURLE_OK)
 			{
@@ -256,7 +254,6 @@ State Saver::retrieve_comments(Item* i)
 				response.message = curl_easy_strerror(result);
 			}
 			else {
-
 				JQFIO(logpath + "/comments_" + i->id + ".json", jresponse);
 				std::clog << "Parsing comments... " << std::endl;
 				nlohmann::json root = nlohmann::json::parse(jresponse);
@@ -612,7 +609,7 @@ void Saver::download_content(std::vector<Item*> i)
 
 			if (s.http_state == 200) {
 
-				if(!args.DisableComments)
+				if(!args.EnableCommentThreads)
 					RetrieveComments(elem);
 
 				std::vector<std::string> res;
@@ -712,19 +709,19 @@ bool Saver::scan_cmd(int argc, char* argv[])
 				<< "	-i: Disable images" << std::endl
 				<< "	-a [ACCOUNT] : Load specific account" << std::endl
 				<< "	-t : Disable text" << std::endl
-				<< "	-e : Get everything" << std::endl
-				<< "	-dc : Disable comments" << std::endl
+				<< "	-dc : Disable single comments" << std::endl
+				<< "	-ect : Enable the retrieval of comment threads" << std::endl
 				<< "	-l[limit] : Sets the limit of the number of comments, the default being 250 items" << std::endl
 				<< "	-rha : Enable reddit - html - archiver output" << std::endl
 				<< "	-v / --version : Get version" << std::endl
-				<< "	-whl / -whitelist[sub, sub] : whitelists a patricular sub or user with -uw" << std::endl
-				<< "	-bl / -blacklist[sub, sub] : blackists a paticular sub or user with -uw" << std::endl
+				<< "	-whl / -whitelist[sub, sub] : whitelists a patricular sub or user with -whl" << std::endl
+				<< "	-bl / -blacklist[sub, sub] : blackists a paticular sub or user with -bl" << std::endl
 				<< "	-sb/ -sortby [subreddit,title,id or unsorted] : Arranges the media downloaded based on the selected sort" << std::endl
 				<< "	-r/-reverse reverses : the list of saved items" << std::endl
 				<< "	-uw [user,user] : Enable whitelisting users" << std::endl
 				<< "	-ub	[user,user] : Enable blacklisting of users" << std::endl
-				<< "    -bd [domain,domain] : Enable blacklisting of domain names" << std::endl
-				<< "    -bw [domain,domain] : Enable whitelisting of domain names" << std::endl
+				<< "	-bd [domain,domain] : Enable blacklisting of domain names" << std::endl
+				<< "	-bw [domain,domain] : Enable whitelisting of domain names" << std::endl
 				<< "	-vb : Enable output of more logs" << std::endl;
 			return false;
 		}

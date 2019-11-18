@@ -50,34 +50,37 @@ Before you start RSA, you need to setup your credentials from https://www.reddit
 Run RSA without any flags if you want everything thats scanned
 
 ```
-		Flags:
+	Flags:
 
 		-i: Disable Images
-		-dc: Disable comments
 		-a [ACCOUNT]: Load a specific account
 		-t: Disable Text
+		-dc: Disable comments
+		-ect : Enable the retrieval of comment threads
 		-l [limit]: Sets the limit of the number of items, the default being 1000 items
-		-RHA: Enable reddit-html-archiver output
+		-rha: Enable reddit-html-archiver output
+		-v/-version: Version
 		-whl/-whitelist [sub]: Whitelist a paticular sub and block the others
 		-bl/-blacklist [sub]: Black list a paticular sub
 		-h/-help: help
-		-v/-version: Version
 		-sb/sortby [sort]: Sorts downloaded media by: title,subreddit,id or unsorted; with the default being subreddit
 		-r/-reverse: reverse the list of items collected from save
     		-uw [user,user]: Enable whitelisting users
     		-ub [user,user]: Enable blacklisting of users
     		-bd [domain,domain] : Enable blacklisting of domain names
     		-wd [domain,domain] : Enable whitelisting of domain names
+		-vb : Enable output of more logs
 ```
 
 ## Imgur on RSA/RST
-As of October 27, RSA is able to download albums and images. This can be enabled by adding a client id in settings.json
+As of October 27, RSA is able to download albums and images from Imgur using It's API. This can be enabled by adding a client id in settings.json
 To get this ID, go to your Applications in your account settings on Imgur and register RSA.
 
 ## Known Issues / Notes
 
 1. Not really an issues/bug, but RSA doesn't support downloading video, but I want to try to support it in the future
 2. The -RHA option doesn't always work when processing a large scale of items, but I could be wrong, it might not work at all.
+3. It's important to know that, the ability to retrieve full comment threads is not fully implemented.
 
 ## Things I plan to do to RSA/RST
 

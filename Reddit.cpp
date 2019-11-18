@@ -338,9 +338,7 @@ State RedditAccess::retrieve_imgur_image(std::string imghash, std::string& URL)
 		curl_easy_cleanup(handle);
 		curl_free(header);
 
-		#ifdef _DEBUG
 		QFIO(this->logpath + std::string("/imgur_image_" + imghash + std::string(".txt")), rdata);
-		#endif
 
 		QFIO(this->logpath + std::string("/imgur_header_") + imghash + std::string(".txt"), hd);
 
@@ -402,9 +400,7 @@ State RedditAccess::retrieve_album_images(std::string albumhash, std::vector<std
 		 curl_global_cleanup();
 		 curl_slist_free_all(header);
 
-		 #ifdef _DEBUG
 		 JQFIO(std::string("imgur_album_") + albumhash + ".txt", rdata);
-		 #endif
 
 		 if(result != CURLE_OK)
 		 {
