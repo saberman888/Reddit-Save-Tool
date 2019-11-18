@@ -125,8 +125,26 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after)
 							it->is_self = elem.at("data").at("is_self").get<bool>();
 							try {
 								it->is_video = elem.at("data").at("is_video").get<bool>();
+                                
+                                nlohmann::json rvideo = elem.at("data").at("media").at("reddit_video");
+
+
+								it->fallback_url = rvideo.at("fallback_url").get<std::string>();
+								it->is_gif = rvideo.at("is_gif").get<bool>();
+
+								std::size_t size = it->fallback_url.substr(it->fallback_url.find("DASH")).size();
+								std::string audio_result = it->fallback_url.substr(0, it->fallback_url.size()-(int)size);
+								it->audio_url = audio_result + "audio";
+
+								#ifdef _DEBUG
+								std::clog << "fallback URL for: " << it->id << " is " << it->fallback_url << std::endl;
+								std::clog << "With an Audio url for: " << it->audio_url << std::endl;
+
+								std::cout << "fallback URL for: " << it->id << " is " << it->fallback_url << std::endl;
+								std::cout << "With an Audio url for: " << it->audio_url << std::endl;
+								#endif
 							}
-							catch (nlohmann::json::out_of_range& e) {
+							catch (nlohmann::json::exception& e) {
 								it->is_video = false;
 							}
 							if (it->is_self)
@@ -540,7 +558,7 @@ void Saver::download_content(std::vector<Item*> i)
 				State res = download_item(vai[i].c_str(), dest, fn);
 				if(res.http_state != 200)
 				{
-					std::cout << "Error failed to retrieve " << i << " of " << vai.size() << std::endl;
+					std::cout << "Error failed to retrieve " << i+1 << " of " << vai.size() << std::endl;
 					std::cout << "Reason: " << res.message << std::endl;
 				}
 				std::cout << "Retrieving: " << i+1 << " of " << vai.size() << std::endl;
@@ -576,6 +594,32 @@ void Saver::download_content(std::vector<Item*> i)
 			}
 		}
 
+        if(elem->is_video && args.VideosEnabled)
+		{
+			if (!fs::exists(path)) {
+				try {
+					fs::create_directories(path);
+				}
+				catch (fs::filesystem_error& e) {
+					std::clog << e.what() << ", " << path << ", ID: " << elem->id << std::endl;
+					std::cout << e.what() << ", " << path << ", ID: " << elem->id << std::endl;
+				}
+			}
+			std::cout << "Retrieving video: " << elem->url << std::endl;
+            // Remove all instances of \' because it causes an sh error
+			boost::replace_all(elem->title, "\'", "");
+			// Download both the audio and video and then mux them using ffmpeg
+			download_item(elem->fallback_url.c_str(), path, std::string(elem->title + ".mp4"));
+			download_item(elem->audio_url.c_str(), path, std::string(elem->title + ".mp3"));
+			std::string cmd_args = "ffmpeg -y -i " + path + elem->title + std::string(".mp4") + " -i " +  path + elem->title + std::string(".mp3") + " -c copy -map 0:v -map 1:a " + path + elem->title + ".mkv";
+            // comeplete the task
+			std::cout << cmd_args << std::endl;
+			system(cmd_args.c_str());
+            // Once done remove both the audio file and video file
+            fs::remove(path + std::string(elem->title + ".mp3"));
+            fs::remove(path + std::string(elem->title + ".mp4"));
+			continue;
+		}
 		CURL* handle;
 		CURLcode result;
 		State s;
