@@ -608,12 +608,14 @@ void Saver::download_content(std::vector<Item*> i)
 			std::cout << "Retrieving video: " << elem->url << std::endl;
             // Remove all instances of \' because it causes an sh error
 			boost::replace_all(elem->title, "\'", "");
+            boost::replace_all(elem->title, " ", "_"); // replace all instances of space so a filename can be better made of the title
 			// Download both the audio and video and then mux them using ffmpeg
 			download_item(elem->fallback_url.c_str(), path, std::string(elem->title + ".mp4"));
 			download_item(elem->audio_url.c_str(), path, std::string(elem->title + ".mp3"));
 			std::string cmd_args = "ffmpeg -y -i " + path + elem->title + std::string(".mp4") + " -i " +  path + elem->title + std::string(".mp3") + " -c copy -map 0:v -map 1:a " + path + elem->title + ".mkv";
             // comeplete the task
 			std::cout << cmd_args << std::endl;
+            std::clog << "Retrieving video of " << elem->title << std::endl;
 			system(cmd_args.c_str());
             // Once done remove both the audio file and video file
             fs::remove(path + std::string(elem->title + ".mp3"));
