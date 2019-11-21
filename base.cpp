@@ -3,7 +3,7 @@
 std::string stripfname(std::string src)
 {
 	std::string result = src;
-	std::string characters[] = { "/", "\\", "?", "%", "*", ":", "|", "\"", "<", ">", ".","\'" };
+	std::string characters[] = { "/", "\\", "?", "%", "*", ":", "|", "\"", "<", ">", ".", "\'", "&", ",", "(", ")"};
 	for (std::string chr : characters)
 		boost::erase_all(result, chr);
 	return result;
@@ -63,4 +63,4 @@ bool _Item::IsImgurLink()
 
 State::State() : http_state(0), message("") {}
 
-CMDArgs::CMDArgs() : EnableImages(true), DisableComments(false), EnableText(true), RHA(false), limit(1000), username(""), sort(Subreddit), reverse(false), VideosEnabled(true), Verbose(false), EnableCommentThreads(false){}
+CMDArgs::CMDArgs() : EnableImages(true), DisableComments(false), EnableText(true), RHA(false), limit(1000), username(""), sort(Subreddit), reverse(false), VideosEnabled(true), Verbose(false), EnableCommentThreads(false), EnableImgurAlbums(true){}

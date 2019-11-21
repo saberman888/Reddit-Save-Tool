@@ -529,7 +529,7 @@ void Saver::download_content(std::vector<Item*> i)
 		}
 		path += "/";
 
-		if (elem->IsImgurAlbum())
+		if (elem->IsImgurAlbum() && args.EnableImgurAlbums)
 		{
 			std::vector<std::string> vih, vai;
 			boost::split(vih, elem->url, boost::is_any_of("/"));
@@ -606,20 +606,20 @@ void Saver::download_content(std::vector<Item*> i)
 				}
 			}
 			std::cout << "Retrieving video: " << elem->url << std::endl;
-            // Remove all instances of \' because it causes an sh error
-			boost::replace_all(elem->title, "\'", "");
-            boost::replace_all(elem->title, " ", "_"); // replace all instances of space so a filename can be better made of the title
+            // Remove all instances of invalid characters
+            std::string fn = stripfname(elem->title);
+            boost::replace_all(fn, " ", "_"); // replace all instances of space so a filename can be better made of the title
 			// Download both the audio and video and then mux them using ffmpeg
-			download_item(elem->fallback_url.c_str(), path, std::string(elem->title + ".mp4"));
-			download_item(elem->audio_url.c_str(), path, std::string(elem->title + ".mp3"));
-			std::string cmd_args = "ffmpeg -y -i " + path + elem->title + std::string(".mp4") + " -i " +  path + elem->title + std::string(".mp3") + " -c copy -map 0:v -map 1:a " + path + elem->title + ".mkv";
+			download_item(elem->fallback_url.c_str(), path, std::string(fn + ".mp4"));
+			download_item(elem->audio_url.c_str(), path, std::string(fn + ".mp3"));
+			std::string cmd_args = "ffmpeg -y -i " + path + fn + std::string(".mp4") + " -i " +  path + fn + std::string(".mp3") + " -c copy -map 0:v -map 1:a " + path + fn + ".mkv";
             // comeplete the task
 			std::cout << cmd_args << std::endl;
             std::clog << "Retrieving video of " << elem->title << std::endl;
 			system(cmd_args.c_str());
             // Once done remove both the audio file and video file
-            fs::remove(path + std::string(elem->title + ".mp3"));
-            fs::remove(path + std::string(elem->title + ".mp4"));
+            fs::remove(path + std::string(fn + ".mp3"));
+            fs::remove(path + std::string(fn + ".mp4"));
 			continue;
 		}
 		CURL* handle;
@@ -755,6 +755,7 @@ bool Saver::scan_cmd(int argc, char* argv[])
 				<< "	-i: Disable images" << std::endl
 				<< "	-a [ACCOUNT] : Load specific account" << std::endl
 				<< "	-t : Disable text" << std::endl
+				<< "    -b : Disable imgur albums" << std::endl
 				<< "	-dc : Disable single comments" << std::endl
 				<< "	-ect : Enable the retrieval of comment threads" << std::endl
 				<< "	-l[limit] : Sets the limit of the number of comments, the default being 250 items" << std::endl
@@ -912,7 +913,9 @@ bool Saver::scan_cmd(int argc, char* argv[])
 			i++;
 		} else if(arg == "-vb") {
 			args.Verbose = true;
-		}
+		} else if(arg == "-b") {
+            args.EnableImgurAlbums = false;
+        }
 		else {
 			std::cerr << "Error, unkown command: " << argv[i] << std::endl;
 			std::cout << "Try -h or --help for a list of commands" << std::endl;
