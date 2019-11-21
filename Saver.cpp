@@ -125,8 +125,26 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after)
 							it->is_self = elem.at("data").at("is_self").get<bool>();
 							try {
 								it->is_video = elem.at("data").at("is_video").get<bool>();
+                                
+                                nlohmann::json rvideo = elem.at("data").at("media").at("reddit_video");
+
+
+								it->fallback_url = rvideo.at("fallback_url").get<std::string>();
+								it->is_gif = rvideo.at("is_gif").get<bool>();
+
+								std::size_t size = it->fallback_url.substr(it->fallback_url.find("DASH")).size();
+								std::string audio_result = it->fallback_url.substr(0, it->fallback_url.size()-(int)size);
+								it->audio_url = audio_result + "audio";
+
+								#ifdef _DEBUG
+								std::clog << "fallback URL for: " << it->id << " is " << it->fallback_url << std::endl;
+								std::clog << "With an Audio url for: " << it->audio_url << std::endl;
+
+								std::cout << "fallback URL for: " << it->id << " is " << it->fallback_url << std::endl;
+								std::cout << "With an Audio url for: " << it->audio_url << std::endl;
+								#endif
 							}
-							catch (nlohmann::json::out_of_range& e) {
+							catch (nlohmann::json::exception& e) {
 								it->is_video = false;
 							}
 							if (it->is_self)
@@ -511,7 +529,7 @@ void Saver::download_content(std::vector<Item*> i)
 		}
 		path += "/";
 
-		if (elem->IsImgurAlbum())
+		if (elem->IsImgurAlbum() && args.EnableImgurAlbums)
 		{
 			std::vector<std::string> vih, vai;
 			boost::split(vih, elem->url, boost::is_any_of("/"));
@@ -540,7 +558,7 @@ void Saver::download_content(std::vector<Item*> i)
 				State res = download_item(vai[i].c_str(), dest, fn);
 				if(res.http_state != 200)
 				{
-					std::cout << "Error failed to retrieve " << i << " of " << vai.size() << std::endl;
+					std::cout << "Error failed to retrieve " << i+1 << " of " << vai.size() << std::endl;
 					std::cout << "Reason: " << res.message << std::endl;
 				}
 				std::cout << "Retrieving: " << i+1 << " of " << vai.size() << std::endl;
@@ -576,6 +594,34 @@ void Saver::download_content(std::vector<Item*> i)
 			}
 		}
 
+        if(elem->is_video && args.VideosEnabled)
+		{
+			if (!fs::exists(path)) {
+				try {
+					fs::create_directories(path);
+				}
+				catch (fs::filesystem_error& e) {
+					std::clog << e.what() << ", " << path << ", ID: " << elem->id << std::endl;
+					std::cout << e.what() << ", " << path << ", ID: " << elem->id << std::endl;
+				}
+			}
+			std::cout << "Retrieving video: " << elem->url << std::endl;
+            // Remove all instances of invalid characters
+            std::string fn = stripfname(elem->title);
+            boost::replace_all(fn, " ", "_"); // replace all instances of space so a filename can be better made of the title
+			// Download both the audio and video and then mux them using ffmpeg
+			download_item(elem->fallback_url.c_str(), path, std::string(fn + ".mp4"));
+			download_item(elem->audio_url.c_str(), path, std::string(fn + ".mp3"));
+			std::string cmd_args = "ffmpeg -y -i " + path + fn + std::string(".mp4") + " -i " +  path + fn + std::string(".mp3") + " -c copy -map 0:v -map 1:a " + path + fn + ".mkv";
+            // comeplete the task
+			std::cout << cmd_args << std::endl;
+            std::clog << "Retrieving video of " << elem->title << std::endl;
+			system(cmd_args.c_str());
+            // Once done remove both the audio file and video file
+            fs::remove(path + std::string(fn + ".mp3"));
+            fs::remove(path + std::string(fn + ".mp4"));
+			continue;
+		}
 		CURL* handle;
 		CURLcode result;
 		State s;
@@ -650,6 +696,10 @@ void Saver::download_content(std::vector<Item*> i)
 						out << "Author: " << elem->author << std::endl;
 						out << "Date: " << to_realtime(elem->created_utc) << std::endl;
 						out << elem->permalink << std::endl;
+                        if(elem->is_self)
+                            out << elem->orig_self_text << std::endl;
+                        else
+                            out << elem->url;
 						if (elem->kind == "t1"){
 							out << elem->orig_body << std::endl;
 
@@ -709,6 +759,8 @@ bool Saver::scan_cmd(int argc, char* argv[])
 				<< "	-i: Disable images" << std::endl
 				<< "	-a [ACCOUNT] : Load specific account" << std::endl
 				<< "	-t : Disable text" << std::endl
+				<< "\t-b : Disable imgur albums" << std::endl
+				<< "\t-nv : Disable videos" << std::endl
 				<< "	-dc : Disable single comments" << std::endl
 				<< "	-ect : Enable the retrieval of comment threads" << std::endl
 				<< "	-l[limit] : Sets the limit of the number of comments, the default being 250 items" << std::endl
@@ -720,8 +772,8 @@ bool Saver::scan_cmd(int argc, char* argv[])
 				<< "	-r/-reverse reverses : the list of saved items" << std::endl
 				<< "	-uw [user,user] : Enable whitelisting users" << std::endl
 				<< "	-ub	[user,user] : Enable blacklisting of users" << std::endl
-				<< "	-bd [domain,domain] : Enable blacklisting of domain names" << std::endl
-				<< "	-bw [domain,domain] : Enable whitelisting of domain names" << std::endl
+				<< "\t-bd [domain,domain] : Enable blacklisting of domain names" << std::endl
+				<< "\t-bw [domain,domain] : Enable whitelisting of domain names" << std::endl
 				<< "	-vb : Enable output of more logs" << std::endl;
 			return false;
 		}
@@ -866,7 +918,11 @@ bool Saver::scan_cmd(int argc, char* argv[])
 			i++;
 		} else if(arg == "-vb") {
 			args.Verbose = true;
-		}
+		} else if(arg == "-b") {
+            args.EnableImgurAlbums = false;
+        } else if(arg == "-nv") {
+            args.VideosEnabled = false;
+        }
 		else {
 			std::cerr << "Error, unkown command: " << argv[i] << std::endl;
 			std::cout << "Try -h or --help for a list of commands" << std::endl;
