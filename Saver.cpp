@@ -696,6 +696,10 @@ void Saver::download_content(std::vector<Item*> i)
 						out << "Author: " << elem->author << std::endl;
 						out << "Date: " << to_realtime(elem->created_utc) << std::endl;
 						out << elem->permalink << std::endl;
+                        if(elem->is_self)
+                            out << elem->orig_self_text << std::endl;
+                        else
+                            out << elem->url;
 						if (elem->kind == "t1"){
 							out << elem->orig_body << std::endl;
 
@@ -755,7 +759,8 @@ bool Saver::scan_cmd(int argc, char* argv[])
 				<< "	-i: Disable images" << std::endl
 				<< "	-a [ACCOUNT] : Load specific account" << std::endl
 				<< "	-t : Disable text" << std::endl
-				<< "    -b : Disable imgur albums" << std::endl
+				<< "\t-b : Disable imgur albums" << std::endl
+				<< "\t-nv : Disable videos" << std::endl
 				<< "	-dc : Disable single comments" << std::endl
 				<< "	-ect : Enable the retrieval of comment threads" << std::endl
 				<< "	-l[limit] : Sets the limit of the number of comments, the default being 250 items" << std::endl
@@ -767,8 +772,8 @@ bool Saver::scan_cmd(int argc, char* argv[])
 				<< "	-r/-reverse reverses : the list of saved items" << std::endl
 				<< "	-uw [user,user] : Enable whitelisting users" << std::endl
 				<< "	-ub	[user,user] : Enable blacklisting of users" << std::endl
-				<< "    -bd [domain,domain] : Enable blacklisting of domain names" << std::endl
-				<< "    -bw [domain,domain] : Enable whitelisting of domain names" << std::endl
+				<< "\t-bd [domain,domain] : Enable blacklisting of domain names" << std::endl
+				<< "\t-bw [domain,domain] : Enable whitelisting of domain names" << std::endl
 				<< "	-vb : Enable output of more logs" << std::endl;
 			return false;
 		}
@@ -915,6 +920,8 @@ bool Saver::scan_cmd(int argc, char* argv[])
 			args.Verbose = true;
 		} else if(arg == "-b") {
             args.EnableImgurAlbums = false;
+        } else if(arg == "-nv") {
+            args.VideosEnabled = false;
         }
 		else {
 			std::cerr << "Error, unkown command: " << argv[i] << std::endl;
