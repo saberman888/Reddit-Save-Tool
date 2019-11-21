@@ -3,7 +3,7 @@
 std::string stripfname(std::string src)
 {
 	std::string result = src;
-	std::string characters[] = { "/", "\\", "?", "%", "*", ":", "|", "\"", "<", ">", ".", "\'", "&", ",", "(", ")"};
+	std::string characters[] = { "/", "\\", "?", "%", "*", ":", "|", "\"", "<", ">", ".", "\'", "&", ",", "(", ")","#",";"};
 	for (std::string chr : characters)
 		boost::erase_all(result, chr);
 	return result;
