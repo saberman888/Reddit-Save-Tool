@@ -655,7 +655,7 @@ void Saver::download_content(std::vector<Item*> i)
 
 			if (s.http_state == 200) {
 
-				if(!args.EnableCommentThreads)
+				if(args.EnableCommentThreads)
 					RetrieveComments(elem);
 
 				std::vector<std::string> res;
@@ -922,6 +922,8 @@ bool Saver::scan_cmd(int argc, char* argv[])
             args.EnableImgurAlbums = false;
         } else if(arg == "-nv") {
             args.VideosEnabled = false;
+        } else if(arg == "-ect") {
+            args.EnableCommentThreads = true;
         }
 		else {
 			std::cerr << "Error, unkown command: " << argv[i] << std::endl;
