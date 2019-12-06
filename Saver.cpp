@@ -696,10 +696,10 @@ void Saver::download_content(std::vector<Item*> i)
 						if (elem->kind == "t1"){
 							out << elem->orig_body << std::endl;
                             
-                            if(!elem->comments.empty())
+                            /*if(!elem->comments.empty())
                             {
-                                
-                            }
+                                TODO: Implement adding child comments to the parent
+                            }*/
 
 						}
 						else{
