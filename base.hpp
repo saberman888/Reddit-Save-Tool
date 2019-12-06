@@ -24,7 +24,7 @@ std::string to_realtime(long timestamp);
 class State
 {
 public:
-		int http_state;
+		long http_state;
 		std::string message;
 		State();
 };
@@ -80,7 +80,7 @@ typedef struct _Item
 	bool over_18;
 	//bool retrieved_on;
 	int score;
-	int num_comments;
+	int num_comments, depth;
 	bool stickied;
 
 	std::string subreddit;

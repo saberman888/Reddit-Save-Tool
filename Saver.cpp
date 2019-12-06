@@ -10,7 +10,6 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after)
 	State response;
 	struct curl_slist* header = nullptr;
 	std::string jresponse, hresponse;
-	int response_code;
 
 	handle = curl_easy_init();
 
@@ -47,7 +46,7 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after)
 			curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
 #endif
 			result = curl_easy_perform(handle);
-			curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &response_code);
+			curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &response.http_state);
 			curl_easy_cleanup(handle);
 			curl_global_cleanup();
 			curl_free(header);
@@ -58,7 +57,6 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after)
 
 			if (result != CURLE_OK)
 			{
-				response.http_state = response_code;
 				response.message = curl_easy_strerror(result);
 			}
 			else {
@@ -116,7 +114,7 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after)
 							std::string id = elem.at("data").at("link_id").get<std::string>();
 							id = id.substr(3, id.size());
                             
-                            it->depth = elem.at("data").at("depth").get<int>();
+                            //it->depth = elem.at("data").at("depth").get<int>();
 
 							it->id = id;
 						}
@@ -204,10 +202,6 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after)
 					std::clog << "get_saved_items result state: " << response.http_state << ", " << response.message << std::endl;
 					return response;
 				}
-
-				response.http_state = response_code;
-				response.message = "";
-
 			}
 		}
 	}
@@ -224,7 +218,6 @@ State Saver::retrieve_comments(Item* i)
 	CURLcode result;
 	CURL* handle;
 	std::string jresponse;
-	int httpc;
 	State response;
 	struct curl_slist* header = nullptr;
 
@@ -261,7 +254,7 @@ State Saver::retrieve_comments(Item* i)
 			curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, &writedat);
 
 			result = curl_easy_perform(handle);
-			curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &httpc);
+			curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &response.http_state);
 			curl_easy_cleanup(handle);
 			curl_global_cleanup();
 			curl_free(header);
@@ -270,7 +263,6 @@ State Saver::retrieve_comments(Item* i)
 
 			if (result != CURLE_OK)
 			{
-				response.http_state = httpc;
 				response.message = curl_easy_strerror(result);
 			}
 			else {
@@ -343,8 +335,6 @@ State Saver::retrieve_comments(Item* i)
 					}
 				}
 
-				response.http_state = httpc;
-				response.message = "";
 			}
 		}
 	}
@@ -550,7 +540,7 @@ void Saver::download_content(std::vector<Item*> i)
 
 			std::string dest = path + elem->title;
 			std::string fn;
-			std::cout << "Retrieving imgur album: " << elem->url << " from " << elem->subreddit << std::endl;
+			std::cout << "#" << j << " Retrieving imgur album: " << elem->url << " from " << elem->subreddit << std::endl;
 			for(int i = 0; i < vai.size(); i++)
 			{
 				std::vector<std::string> _vih;
@@ -568,7 +558,7 @@ void Saver::download_content(std::vector<Item*> i)
 			std::cout << std::endl;
 		} else if( elem->IsImgurLink() && imgur_enabled) {
 			std::string url = elem->url;
-			std::clog << "Retrieving Imgur image: " << url << std::endl;
+			std::clog << "#" << j << " Retrieving Imgur image: " << url << std::endl;
 			if(elem->IsPossibleImage()){
 				// strip the extension from the urls
 				std::string urls[] = {".jpeg", ".bmp", ".png", ".gif", ".jpg", ".tiff" };
@@ -607,7 +597,7 @@ void Saver::download_content(std::vector<Item*> i)
 					std::cout << e.what() << ", " << path << ", ID: " << elem->id << std::endl;
 				}
 			}
-			std::cout << "Retrieving video: " << elem->url << std::endl;
+			std::cout << "#" << j << " Retrieving video: " << elem->url << std::endl;
             // Remove all instances of invalid characters
             std::string fn = stripfname(elem->title);
             boost::replace_all(fn, " ", "_"); // replace all instances of space so a filename can be better made of the title
@@ -617,7 +607,7 @@ void Saver::download_content(std::vector<Item*> i)
 			std::string cmd_args = "ffmpeg -y -i " + path + fn + std::string(".mp4") + " -i " +  path + fn + std::string(".mp3") + " -c copy -map 0:v -map 1:a " + path + fn + ".mkv";
             // comeplete the task
 			std::cout << cmd_args << std::endl;
-            std::clog << "Retrieving video of " << elem->title << std::endl;
+            std::clog << "#" << j << " Retrieving video of " << elem->title << std::endl;
 			system(cmd_args.c_str());
             // Once done remove both the audio file and video file
             fs::remove(path + std::string(fn + ".mp3"));
@@ -676,8 +666,9 @@ void Saver::download_content(std::vector<Item*> i)
 					if (res[0] == "image") {
 						std::ofstream(path + elem->id + "." + res[1], std::ios::binary) << data;
 						std::clog << "Content: " << elem->id << " stored at " << path << std::endl;
-						std::cout << "Retrieving content: " << elem->url << " from " << elem->permalink << std::endl;
-					}
+						std::cout << "#" << j <<  " Retrieving content: " << elem->url << " from " << elem->permalink << std::endl;
+                        continue;
+                    }
 				}
 				if (args.EnableText) {
 
@@ -714,8 +705,8 @@ void Saver::download_content(std::vector<Item*> i)
 						else{
 							out << elem->orig_self_text << std::endl;
 						}
-						std::cout << "Retrieving content: " << elem->permalink << std::endl;
-
+						std::cout << "#" << j << " Retrieving content: " << elem->permalink << std::endl;
+                        continue;
 					}
 
 				}

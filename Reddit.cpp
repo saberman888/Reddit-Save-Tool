@@ -148,7 +148,6 @@ State RedditAccess::obtain_token(bool refresh)
 	CURL* handle;
 	CURLcode result;
 	std::string json;
-	int responsecode;
 	State response;
 
 	handle = curl_easy_init();
@@ -182,27 +181,24 @@ State RedditAccess::obtain_token(bool refresh)
 			curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
 #endif
 			result = curl_easy_perform(handle);
-			curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &responsecode);
-			curl_easy_cleanup(handle);
-			curl_global_cleanup();
+			curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &response.http_state);
+			
 #ifdef _DEBUG
-			QFIO("token_access.txt", json);
+            QFIO("token_access.txt", json);
 #endif
 
 			if (result != CURLE_OK)
 			{
-				response.http_state = responsecode;
 				response.message = curl_easy_strerror(result);
 				return response;
 			}
 			else {
 
-
-				nlohmann::json parse = nlohmann::json::parse(json);
+				nlohmann::json parse;
 
 				try {
+                    parse = nlohmann::json::parse(json);
 					this->token = parse.at("access_token").get<std::string>();
-					response.http_state = responsecode;
 #ifdef _DEBUG
 					std::cout << "Token obtained: " << this->token << std::endl;
 #endif
@@ -229,24 +225,24 @@ State RedditAccess::obtain_token(bool refresh)
 					try {
 						std::clog << "Checking error.." << std::endl;
 						response.message = parse.at("message").get<std::string>();
-						response.http_state = parse.at("error").get<int>();
 					}
 					catch (nlohmann::json::out_of_range&) {
 						try {
 							std::clog << "Checking if error is an invalid grant" << std::endl;
-							response.http_state = responsecode;
 							response.message = parse.at("invalid_grant").get<std::string>();
 							response.http_state = -1;
 						}
 						catch (nlohmann::json::out_of_range& e) {
 							std::clog << "Unknown error from obtain_token" << std::endl;
 							response.message = e.what();
-							response.http_state = responsecode;
+							response.http_state = -1;
 
 						}
 					}
 				}
 			}
+			curl_easy_cleanup(handle);
+			curl_global_cleanup();
 		}
 		else {
 			curl_easy_cleanup(handle);

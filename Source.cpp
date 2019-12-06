@@ -5,7 +5,6 @@
 #include <cstdlib>
 
 using namespace std;
-// TODO: Add option to not download images, but output the URLs into a text file
 // TODO: Add more options for directory structure E.g /Sub/Post_tite/[Content]
 // TODO: Add things like author, permalink and etc to the text files
 // TODO: Create GUI for RSA
@@ -45,9 +44,7 @@ int main(int argc, char* argv[])
 
 	s.init_logs();
 	std::cout << "Requesting access to Reddit..." << std::endl;
-	State w = s.AccessReddit();
-	//if(true)
-		//s.authorize_imgur();
+	State w = s.AccessReddit();;
 	if (w.http_state != 200)
 	{
 		std::cout << "Error, failed to get a Reddit access token, " << w.http_state << " : " << w.message << std::endl;
