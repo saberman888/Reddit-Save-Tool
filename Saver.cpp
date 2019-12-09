@@ -349,20 +349,7 @@ State Saver::retrieve_comments(Item* i)
 bool Saver::write_links(std::vector<Item*> src, std::vector<std::string> subfilter)
 {
 	std::clog << "Writing links into CSV" << std::endl;
-	time_t t;
-	struct tm* timeinfo = nullptr;
-
-	time(&t);
-#if defined(_MSC_VER)
-	localtime_s(timeinfo, &t);
-#elif (defined(__MINGW64__) || defined(__MINGW32__))
-	timeinfo = localtime(&t);
-#else
-	localtime_r(&t,timeinfo);
-#endif
-
-	char datestr[15];
-	std::strftime(datestr, sizeof(datestr), "/%Y/%m/%d/", timeinfo);
+    std::string datestr = get_time("/%Y/%m/%d/");
 	// Capitalize the username
 	Account->username[0] = toupper(Account->username[0]);
 

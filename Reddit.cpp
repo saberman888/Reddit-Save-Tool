@@ -3,31 +3,18 @@
 
 void RedditAccess::init_logs() {
 
-	time_t t;
-	time(&t);
-	char datestr[11];
-
-#if defined(_MSC_VER)
-	struct tm timeinfo;
-	localtime_s(&timeinfo, &t);
-	std::strftime(datestr, sizeof(datestr), "%Y-%m-%d ", &timeinfo);
-#else
-	struct tm* timeinfo = nullptr;
-	timeinfo = localtime(&t);
-	std::strftime(datestr, sizeof(datestr), "%Y-%m-%d ", timeinfo);
-#endif
-
-
+    std::string datestr = get_time("%Y-%m-%d ");
+    
 #if defined(USE_HOME_DIR)
 	char* homedir = getenv("HOME");
 	if(homedir == NULL)
 		homedir = getpwuid(getuid())->pw_dir;
 
-	this->mediapath = std::string(homedir) + "/RSA/media/" + std::string(datestr) + "/" + Account->username + "/";
-	this->logpath = std::string(homedir) + "/RSA/logs/" + std::string(datestr) + "/" + Account->username + "/";
+	this->mediapath = std::string(homedir) + "/RSA/media/" + datestr + "/" + Account->username + "/";
+	this->logpath = std::string(homedir) + "/RSA/logs/" + datestr + "/" + Account->username + "/";
 #else
-	this->logpath = std::string(fs::current_path().u8string()) + "/logs/" + std::string(datestr) + "/" + Account->username + "/";
-	this->mediapath = std::string(fs::current_path().u8string()) + "/media/" + std::string(datestr) + "/" + Account->username + "/";
+	this->logpath = std::string(fs::current_path().u8string()) + "/logs/" + datestr + "/" + Account->username + "/";
+	this->mediapath = std::string(fs::current_path().u8string()) + "/media/" + datestr + "/" + Account->username + "/";
 #endif
 	std::clog << "Current log to be generated at: " << this->logpath << std::endl;
 
@@ -37,7 +24,7 @@ void RedditAccess::init_logs() {
 	old_rdbuf = std::clog.rdbuf();
 	std::clog.rdbuf(log->rdbuf());
 
-	std::clog << "Log generated at " << std::string(datestr) << std::endl;
+	std::clog << "Log generated at " << datestr << std::endl;
 	std::clog << "Beginning log." << std::endl;
 }
 
