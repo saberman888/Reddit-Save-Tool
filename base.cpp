@@ -35,6 +35,24 @@ std::string to_realtime(long timestamp)
 	return std::string(str);
 }
 
+std::string get_time(std::string format)
+{
+    time_t t;
+	time(&t);
+	char datestr[format.size()];
+
+#if defined(_MSC_VER)
+	struct tm timeinfo;
+	localtime_s(&timeinfo, &t);
+	std::strftime(datestr, sizeof(datestr),format, &timeinfo);
+#else
+	struct tm* timeinfo = nullptr;
+	timeinfo = localtime(&t);
+	std::strftime(datestr, sizeof(datestr), format, timeinfo);
+#endif
+    
+    return std::string(datestr)
+}
 bool _Item::IsVideo()
 {
 	return (is_video || domain.rfind("v.redd.it", 0) != std::string::npos || url.rfind("gifv", 0) != std::string::npos);
