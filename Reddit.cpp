@@ -3,7 +3,7 @@
 
 void RedditAccess::init_logs() {
 
-    std::string datestr = get_time("%Y-%m-%d ");
+    std::string datestr = get_time("%Y-%m-%d");
     
 #if defined(USE_HOME_DIR)
 	char* homedir = getenv("HOME");

@@ -268,9 +268,10 @@ State Saver::retrieve_comments(Item* i)
 			else {
 				JQFIO(logpath + "/comments_" + i->id + ".json", jresponse);
 				std::clog << "Parsing comments... " << std::endl;
-				nlohmann::json root = nlohmann::json::parse(jresponse);
+				nlohmann::json root;
 
 				try {
+					root = nlohmann::json::parse(jresponse);
 					response.http_state = root.at("error").get<int>();
 					response.message = root.at("message").get<std::string>();
 					std::clog << "Item: " << response.http_state << ", " << response.message << std::endl;
@@ -372,7 +373,7 @@ bool Saver::write_links(std::vector<Item*> src, std::vector<std::string> subfilt
 	for (size_t j = 0; j < src.size(); j++)
 	{
 		auto elem = src[j];
-        
+
         std::string text;
         if(elem->kind == "t3")
         {
@@ -402,8 +403,10 @@ bool Saver::write_links(std::vector<Item*> src, std::vector<std::string> subfilt
             out.addDatainRow(row.begin(), row.end());
 		std::cout << "Writing links: " << j << " of " << src.size() << std::endl;
         
-
-        std::cout << "\tWriting comments" << std::endl;
+		// Before writing comments, retrieve them
+		std::cout << "Retrieving comments" << std::endl;
+		retrieve_comments(elem);
+        std::cout << "Writing comments" << std::endl;
         CSVWriter com_out(path + elem->id + ".csv");
         std::vector<std::string> cheader = {
             "author",
@@ -435,7 +438,7 @@ bool Saver::write_links(std::vector<Item*> src, std::vector<std::string> subfilt
             };
             com_out.addDatainRow(comment.begin(),comment.end());
             
-            std::cout << "\t\tWriting comment: " << i << " of " << elem->comments.size() << std::endl;
+            std::cout << "Writing comment: " << i << " of " << elem->comments.size() << std::endl;
 
         }
 

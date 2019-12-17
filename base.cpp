@@ -36,23 +36,24 @@ std::string to_realtime(long timestamp)
 
 std::string get_time(std::string format)
 {
-    time_t t;
+	time_t t;
 	time(&t);
-	char* datestr = new char[format.size()];
+	char* datestr = new char[255];
 
 #if defined(_MSC_VER)
 	struct tm timeinfo;
 	localtime_s(&timeinfo, &t);
-	std::strftime(datestr, sizeof(datestr), format.c_str(), &timeinfo);
+	std::strftime(datestr, 255, format.c_str(), &timeinfo);
 #else
 	struct tm* timeinfo = nullptr;
 	timeinfo = localtime(&t);
-	std::strftime(datestr, sizeof(datestr), format.c_str(), timeinfo);
+	std::strftime(datestr, 255, format.c_str(), timeinfo);
 #endif
-	std::string res = std::string(datestr);
+	std::string sdatestr = datestr;
 
 	delete[] datestr;
-    return res;
+	return sdatestr;
+
 }
 bool _Item::IsVideo()
 {

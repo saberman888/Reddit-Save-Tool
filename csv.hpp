@@ -7,7 +7,7 @@
 class CSVWriter
 {
     public:
-        CSVWriter(std::string filename, std::string delim = ",") : lines(0), filename(filename), delimeter(delimeter){}
+        CSVWriter(std::string filename, std::string delim = ",") : lines(0), filename(filename), delimeter(delim){}
         
         template<class T>
         void addDatainRow(T first, T last)
