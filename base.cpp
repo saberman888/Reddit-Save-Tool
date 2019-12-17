@@ -2,11 +2,10 @@
 
 std::string stripfname(std::string src)
 {
-	std::string result = src;
 	std::string characters[] = { "/", "\\", "?", "%", "*", ":", "|", "\"", "<", ">", ".", "\'", "&", ",", "(", ")","#",";"};
 	for (std::string chr : characters)
-		boost::erase_all(result, chr);
-	return result;
+		boost::erase_all(src, chr);
+	return src;
 }
 
 size_t writedat(char* buffer, size_t size, size_t nmemb, std::string& src)
@@ -39,19 +38,21 @@ std::string get_time(std::string format)
 {
     time_t t;
 	time(&t);
-	char datestr[format.size()];
+	char* datestr = new char[format.size()];
 
 #if defined(_MSC_VER)
 	struct tm timeinfo;
 	localtime_s(&timeinfo, &t);
-	std::strftime(datestr, sizeof(datestr),format, &timeinfo);
+	std::strftime(datestr, sizeof(datestr), format.c_str(), &timeinfo);
 #else
 	struct tm* timeinfo = nullptr;
 	timeinfo = localtime(&t);
-	std::strftime(datestr, sizeof(datestr), format, timeinfo);
+	std::strftime(datestr, sizeof(datestr), format.c_str(), timeinfo);
 #endif
-    
-    return std::string(datestr)
+	std::string res = std::string(datestr);
+
+	delete[] datestr;
+    return res;
 }
 bool _Item::IsVideo()
 {

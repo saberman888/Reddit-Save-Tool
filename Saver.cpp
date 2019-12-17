@@ -350,6 +350,7 @@ bool Saver::write_links(std::vector<Item*> src, std::vector<std::string> subfilt
 {
 	std::clog << "Writing links into CSV" << std::endl;
     std::string datestr = get_time("/%Y/%m/%d/");
+
 	// Capitalize the username
 	Account->username[0] = toupper(Account->username[0]);
 
@@ -359,69 +360,84 @@ bool Saver::write_links(std::vector<Item*> src, std::vector<std::string> subfilt
 
 	fs::create_directories(path);
 	std::string filename = path + "links.csv";
-	std::fstream out(filename.c_str(), std::ios::out);
+	//std::fstream out(filename.c_str(), std::ios::out);
+    CSVWriter out(filename);
+    
 	// output header
-	out << "author,created_utc,domain,id,is_self,num_comments,over_18,permalink,retrieved_on,score,selftext,stickied,subreddit_id,title,url" << std::endl;
+	std::vector<std::string> header = {"author", "created_utc", "domain", "id", "is_self", "num_comments", "over_18", "permalink", "retrieved_on", "score", "selftext", "stickied", "subreddit_id", "title", "url"};
+    out.addDatainRow(header.begin(), header.end());
+    
 	int obj_count = 0;
+    
 	for (size_t j = 0; j < src.size(); j++)
 	{
 		auto elem = src[j];
-		bool is_blocked = false;
-		for (auto& selem : subfilter)
-		{
-			if (elem->subreddit == selem){
-				is_blocked = true; break;
-			}
-		}
+        
+        std::string text;
+        if(elem->kind == "t3")
+        {
+            text = elem->self_text;
+        } else if(elem->kind == "t1")
+        {
+            text = elem->body;
+        }
+        
+		std::vector<std::string> row = {
+                elem->author,
+                std::to_string(elem->created_utc),
+                elem->domain,
+                elem->id,
+                bool2str(elem->is_self),
+                std::to_string(elem->num_comments),
+                bool2str(elem->over_18),
+                elem->permalink,
+                std::to_string(0),
+                std::to_string(elem->score),
+                text,
+                bool2str(elem->stickied),
+                elem->subreddit_id,
+                elem->title,
+                elem->url
+            };
+            out.addDatainRow(row.begin(), row.end());
+		std::cout << "Writing links: " << j << " of " << src.size() << std::endl;
+        
 
-		if (is_blocked)
-			continue;
-		obj_count += 1;
-		out << elem->author << "," << elem->created_utc << "," << elem->domain << "," << elem->id << ","
-			<< bool2str(elem->is_self) << "," << elem->num_comments
-			<< "," << bool2str(elem->over_18)
-			<< "," << elem->permalink << "," << 0
-			<< "," << elem->score << ",";
+        std::cout << "\tWriting comments" << std::endl;
+        CSVWriter com_out(path + elem->id + ".csv");
+        std::vector<std::string> cheader = {
+            "author",
+            "body",
+            "created_utc",
+            "id",
+            "link_id",
+            "parent_id",
+            "score"
+            "stickied",
+            "subreddit_id"
+        };
+        
+        com_out.addDatainRow(cheader.begin(), cheader.end());
+        
+        for (size_t i = 0; i < elem->comments.size(); i++) {
+            auto celem = elem->comments[i];
+            
+            std::vector<std::string> comment = {
+                celem->author,
+                celem->body,
+                std::to_string(celem->created_utc),
+                celem->id,
+                celem->link_id,
+                celem->parent_id,
+                std::to_string(celem->score),
+                bool2str(celem->stickied),
+                celem->subreddit_id
+            };
+            com_out.addDatainRow(comment.begin(),comment.end());
+            
+            std::cout << "\t\tWriting comment: " << i << " of " << elem->comments.size() << std::endl;
 
-		std::clog << elem->author << "," << elem->created_utc << ","
-			<< elem->domain << "," << elem->id << ","
-			<< bool2str(elem->is_self) << "," << elem->num_comments
-			<< "," << bool2str(elem->over_18)
-			<< "," << elem->permalink << "," << 0
-			<< "," << elem->score << ",";
-
-		if (elem->kind == "t3") {
-			out << elem->self_text;
-			std::clog << elem->self_text;
-		}
-		else {
-			out << elem->body;
-			std::clog << elem->body;
-		}
-
-		out << "," << bool2str(elem->stickied) << "," << elem->subreddit_id << "," << elem->title << "," << elem->url << std::endl;
-			std::clog << "," << bool2str(elem->stickied) << "," << elem->subreddit_id << "," << elem->title << "," << elem->url;
-
-		std::cout << "Writing: Author: " << elem->author << ", Kind: " << elem->kind << ", Score: " << elem->score << ", No comments: " << elem->num_comments << ", Permalink: " << elem->permalink << std::endl;
-		if (elem->kind == "t1" || elem->is_self)
-			std::cout << "Body: \"" << elem->body << "\"" << std::endl;
-
-		{
-			std::clog << "Writing comments" << std::endl;
-			std::fstream out(path + elem->id + ".csv", std::ios::out);
-			out << "author,body,created_utc,id,link_id,parent_id,score,stickied,subreddit_id" << std::endl;
-			for (size_t i = 0; i < elem->comments.size(); i++) {
-				auto celem = elem->comments[i];
-				out << celem->author << "," << celem->body << "," << celem->created_utc << "," << celem->id << "," << celem->link_id << ","
-					<< celem->parent_id << "," << celem->score << "," << bool2str(celem->stickied) << "," << celem->subreddit_id << std::endl;
-
-				std::clog << celem->author << "," << celem->body << "," << celem->created_utc << "," << celem->id << "," << celem->link_id << ","
-					<< celem->parent_id << "," << celem->score << "," << bool2str(celem->stickied) << "," << celem->subreddit_id << std::endl;
-
-			}
-		}
-
-
+        }
 
 	}
 	return true;
@@ -435,7 +451,7 @@ void Saver::download_content(std::vector<Item*> i)
 
 	// if the number of posts i is less than of args.limit, replace args.limit with the size of i
 	if (i.size() < (unsigned)args.limit)
-		args.limit = i.size();
+		args.limit = (int)i.size();
 
 	for (size_t j = 0; j < (unsigned)args.limit; j++) {
 		Item *elem = i[j];
@@ -962,6 +978,12 @@ State Saver::AccessPosts(std::vector< Item* >& saved)
 	}
 	std::cout << "Total saved items: " << saved.size() << std::endl;
 	return s;
+}
+
+bool is_in_list(std::vector<std::string> lhs, std::string rhs)
+{
+    std::vector<std::string>::iterator it = std::find(std::begin(lhs), std::end(lhs), rhs);
+    return (it != std::end(lhs));
 }
 /*
 State Saver::loadcheck(std::vector<Item*>& items)

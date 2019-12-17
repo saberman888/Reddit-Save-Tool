@@ -17,6 +17,7 @@
 #include "boost/algorithm/string.hpp"
 #include "base.hpp"
 #include "Reddit.hpp"
+#include "csv.hpp"
 
 #if defined(__cpp_lib_filesystem)
 	#include <filesystem>
