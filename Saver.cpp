@@ -347,7 +347,7 @@ State Saver::retrieve_comments(Item* i)
 	return response;
 
 }
-bool Saver::write_links(std::vector<Item*> src, std::vector<std::string> subfilter)
+bool Saver::write_links(std::vector<Item*> src)
 {
 	std::clog << "Writing links into CSV" << std::endl;
     std::string datestr = get_time("/%Y/%m/%d/");
@@ -988,8 +988,3 @@ bool is_in_list(std::vector<std::string> lhs, std::string rhs)
     std::vector<std::string>::iterator it = std::find(std::begin(lhs), std::end(lhs), rhs);
     return (it != std::end(lhs));
 }
-/*
-State Saver::loadcheck(std::vector<Item*>& items)
-{
-	// TODO: Implement loadcheck, a function that checks if a comment tree needs further processing
-}*/

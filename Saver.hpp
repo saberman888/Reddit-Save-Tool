@@ -40,15 +40,11 @@ public:
 	bool scan_cmd(int argc, char* argv[]);
 	State RetrieveComments(Item *i);
 	State AccessPosts(std::vector<Item*>& saved);
-	void WriteLinkCSV(std::vector<Item*> src) { std::vector<std::string> filter; write_links(src, filter); }
-	void WriteLinkCSV(std::vector<Item*> src, std::vector<std::string> filter) { write_links(src, filter); }
-	bool write_links(std::vector<Item*> src, std::vector<std::string> subfilter);
+	void WriteLinkCSV(std::vector<Item*> src) { std::vector<std::string> filter; write_links(src); }
+	bool write_links(std::vector<Item*> src);
 	void download_content(std::vector<Item*> i);
 
 private:
-	//State loadcheck(std::vector<Item*>& items);
 	State get_saved_items(std::vector< Item* >& sitem, std::string after);
 	State retrieve_comments(Item* i);
-
-
 };
