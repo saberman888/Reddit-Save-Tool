@@ -394,7 +394,7 @@ bool Saver::write_links(std::vector<Item*> src)
                 elem->permalink,
                 std::to_string(0),
                 std::to_string(elem->score),
-                text,
+                "\"" + text + "\"",
                 bool2str(elem->stickied),
                 elem->subreddit_id,
                 elem->title,
@@ -427,7 +427,7 @@ bool Saver::write_links(std::vector<Item*> src)
             
             std::vector<std::string> comment = {
                 celem->author,
-                celem->body,
+                "\"" + celem->body + "\"",
                 std::to_string(celem->created_utc),
                 celem->id,
                 celem->link_id,
@@ -465,6 +465,9 @@ void Saver::download_content(std::vector<Item*> i)
 
  		if(std::vector<std::string>::iterator whitelist_it = std::find(std::begin(args.whitelist), std::end(args.whitelist), elem->subreddit); (whitelist_it == std::end(args.whitelist)) && (!args.whitelist.empty()))
 		{
+			std::cout << "#" << j << " Skipping: " << elem->kind << ", " << elem->id << ", " << elem->permalink << ", " << elem->url << ", " << elem->author << std::endl;
+			std::cout << "Reason: Username/Subreddit was on a whitelist" << std::endl;
+
 			std::clog << "Skipping: " << elem->kind << ", " << elem->id << ", " << elem->permalink << ", "<< elem->url << ", " << elem->author << std::endl;
 			std::clog << "Reason: Username/Subreddit was on a whitelist" << std::endl;
 			continue;
