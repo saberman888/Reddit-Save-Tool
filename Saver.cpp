@@ -349,7 +349,6 @@ State Saver::retrieve_comments(Item* i)
 }
 bool Saver::write_links(std::vector<Item*> src)
 {
-    
     if (src.size() < (unsigned)args.limit)
 		args.limit = (int)src.size();
     
@@ -372,19 +371,18 @@ bool Saver::write_links(std::vector<Item*> src)
 	std::vector<std::string> header = {"author", "created_utc", "domain", "id", "is_self", "num_comments", "over_18", "permalink", "retrieved_on", "score", "selftext", "stickied", "subreddit_id", "title", "url"};
     out.addDatainRow(header.begin(), header.end());
     
-	int obj_count = 0;
-    
 	for (size_t j = 0; j < args.limit; j++)
 	{
 		auto elem = src[j];
 
-        std::string text;
+        std::string text, title;
         if(elem->kind == "t3")
         {
-            text = elem->self_text;
+            text = elem->orig_self_text;
         } else if(elem->kind == "t1")
         {
-            text = elem->body;
+            title = "[Comment by " + elem->author +" on ]: " + elem->title;
+            text = elem->orig_body;
         }
         
 		std::vector<std::string> row = {
@@ -405,7 +403,7 @@ bool Saver::write_links(std::vector<Item*> src)
                 elem->url
             };
             out.addDatainRow(row.begin(), row.end());
-		std::cout << "Writing links: " << j << " of " << src.size() << std::endl;
+		std::cout << "Writing links: " << j+1 << " of " << args.limit << std::endl;
         
 		// Before writing comments, retrieve them
 		std::cout << "Retrieving comments" << std::endl;
@@ -442,7 +440,7 @@ bool Saver::write_links(std::vector<Item*> src)
             };
             com_out.addDatainRow(comment.begin(),comment.end());
             
-            std::cout << "Writing comment: " << i << " of " << elem->comments.size() << std::endl;
+            std::cout << "Writing comment: " << i+1 << " of " << elem->comments.size() << std::endl;
 
         }
 
