@@ -349,6 +349,10 @@ State Saver::retrieve_comments(Item* i)
 }
 bool Saver::write_links(std::vector<Item*> src)
 {
+    
+    if (i.size() < (unsigned)args.limit)
+		args.limit = (int)i.size();
+    
 	std::clog << "Writing links into CSV" << std::endl;
     std::string datestr = get_time("/%Y/%m/%d/");
 
@@ -370,7 +374,7 @@ bool Saver::write_links(std::vector<Item*> src)
     
 	int obj_count = 0;
     
-	for (size_t j = 0; j < src.size(); j++)
+	for (size_t j = 0; j < args.limit; j++)
 	{
 		auto elem = src[j];
 
