@@ -417,7 +417,7 @@ bool Saver::write_links(std::vector<Item*> src)
             "id",
             "link_id",
             "parent_id",
-            "score"
+            "score",
             "stickied",
             "subreddit_id"
         };
