@@ -51,7 +51,7 @@ std::string get_time(std::string format)
 	std::strftime(datestr, sizeof(datestr), format, timeinfo);
 #endif
     
-    return std::string(datestr)
+    return std::string(datestr);
 }
 bool _Item::IsVideo()
 {
