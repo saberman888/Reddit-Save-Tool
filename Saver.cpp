@@ -395,7 +395,7 @@ bool Saver::write_links(std::vector<Item*> src)
                 bool2str(elem->is_self),
                 std::to_string(elem->num_comments),
                 bool2str(elem->over_18),
-                elem->permalink,
+                elem->rha_permalink,
                 std::to_string(0),
                 std::to_string(elem->score),
                 "\"" + text + "\"",
