@@ -101,9 +101,10 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after)
 							it->title = title;
 							it->orig_body = elem.at("data").at("body").get<std::string>();
 
-							boost::replace_all(it->body, ",", "&#x2c;");
-							boost::replace_all(it->body, "\"", "&#x22;");
-							boost::replace_all(it->body, "\n", "&#13;");
+                            boost::replace_all(it->self_text, ",", "&#44;");
+                            boost::replace_all(it->self_text, "\"", "&#34;");
+                            boost::replace_all(it->self_text, "\n", "&#10;");
+                            boost::replace_all(it->self_text, "\r", "&#13");
 
 							it->body = "\"" + it->body + "\"";
 
@@ -152,14 +153,15 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after)
 								it->orig_self_text = elem.at("data").at("selftext").get<std::string>();
 								it->self_text = it->orig_self_text;
 
-								boost::replace_all(it->self_text, ",", "&#x2c;");
-								boost::replace_all(it->self_text, "\"", "&#x22;");
-								boost::replace_all(it->self_text, "\n", "&#13;");
+                                boost::replace_all(title, ",", "&#44;");
+                                boost::replace_all(title, "\"", "&#34;");
+                                boost::replace_all(title, "\'", "&#40");
 							}
 							it->domain = elem.at("data").at("domain").get<std::string>();
 							std::string title = elem.at("data").at("title").get<std::string>();
-							boost::replace_all(title, ",", "&#x2c;");
-							boost::replace_all(title, "\"", "&#x22;");
+							boost::replace_all(title, ",", "&#44;");
+							boost::replace_all(title, "\"", "&#34;");
+							boost::replace_all(title, "\'", "&#40");
 							it->title = title;
 							it->permalink = elem.at("data").at("permalink").get<std::string>();
 
@@ -378,11 +380,11 @@ bool Saver::write_links(std::vector<Item*> src)
         std::string text, title;
         if(elem->kind == "t3")
         {
-            text = elem->orig_self_text;
+            text = elem->self_text;
         } else if(elem->kind == "t1")
         {
             title = "[Comment by " + elem->author +" on ]: " + elem->title;
-            text = elem->orig_body;
+            text = elem->body;
         }
         
 		std::vector<std::string> row = {
