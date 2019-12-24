@@ -21,6 +21,8 @@ size_t writedat(char* buffer, size_t size, size_t nmemb, std::string& src);
 std::string to_realtime(long timestamp);
 //Get current time as string
 std::string get_time(std::string format);
+// get current time in unix epoch time
+long get_epoch_time();
 
 class State
 {

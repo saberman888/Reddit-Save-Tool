@@ -96,15 +96,15 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after)
 							it->self_text = "";
 							it->domain = "";
 							std::string title = elem.at("data").at("link_title").get<std::string>();
-							boost::replace_all(title, ",", "&#x2c;");
-							boost::replace_all(title, "\"", "&#x22;");
+							boost::replace_all(title, ",", "&#44;");
+							boost::replace_all(title, "\"", "&#34;");
 							it->title = title;
 							it->orig_body = elem.at("data").at("body").get<std::string>();
 
                             boost::replace_all(it->body, ",", "&#44;");
                             boost::replace_all(it->body, "\"", "&#34;");
                             boost::replace_all(it->body, "\n", "&#10;");
-                            boost::replace_all(it->body, "\r", "&#13");
+                            boost::replace_all(it->body, "\r", "&#13;");
 
 							it->body = "\"" + it->body + "\"";
 
@@ -155,13 +155,15 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after)
 
                                 boost::replace_all(it->self_text, ",", "&#44;");
                                 boost::replace_all(it->self_text, "\"", "&#34;");
-                                boost::replace_all(it->self_text, "\'", "&#40");
+                                boost::replace_all(it->self_text, "\'", "&#40;");
+                                boost::replace_all(it->self_text, "\n", "&#10;");
+                                boost::replace_all(it->self_text, "\r", "&#13;");
 							}
 							it->domain = elem.at("data").at("domain").get<std::string>();
 							std::string title = elem.at("data").at("title").get<std::string>();
 							boost::replace_all(title, ",", "&#44;");
 							boost::replace_all(title, "\"", "&#34;");
-							boost::replace_all(title, "\'", "&#40");
+							boost::replace_all(title, "\'", "&#40;");
 							it->title = title;
 							it->permalink = elem.at("data").at("permalink").get<std::string>();
 
@@ -396,9 +398,9 @@ bool Saver::write_links(std::vector<Item*> src)
                 std::to_string(elem->num_comments),
                 bool2str(elem->over_18),
                 elem->rha_permalink,
-                std::to_string(0),
+                std::to_string(get_epoch_time()),
                 std::to_string(elem->score),
-                "\"" + text + "\"",
+                text,
                 bool2str(elem->stickied),
                 elem->subreddit_id,
                 elem->title,

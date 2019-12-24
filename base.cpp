@@ -55,6 +55,16 @@ std::string get_time(std::string format)
 	return sdatestr;
 
 }
+
+long get_epoch_time()
+{
+    time_t t;
+    struct tm * ttm;
+    
+    time(&t);
+    
+    return reinterpret_cast<long>(t);
+}
 bool _Item::IsVideo()
 {
 	return (is_video || domain.rfind("v.redd.it", 0) != std::string::npos || url.rfind("gifv", 0) != std::string::npos);
