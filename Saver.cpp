@@ -359,9 +359,6 @@ bool Saver::write_links(std::vector<Item*> src)
 	std::clog << "Writing links into CSV" << std::endl;
     std::string datestr = get_time("/%Y/%m/%d/");
 
-	// Capitalize the username
-	Account->username[0] = toupper(Account->username[0]);
-
 	std::string path;
 	path = "data/" + Account->username + datestr;
 
