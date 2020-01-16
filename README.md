@@ -78,7 +78,7 @@ To get this ID, go to your Applications in your account settings on Imgur and re
 
 ## Known Issues / Notes
 
-1. Not really an issues/bug, but RSA doesn't support downloading video, but I want to try to support it in the future
+1. While RSA does support downloading videos, not all videos may successfully become mkvs through the muxing process due to things like filenames with special characters
 2. The -RHA option doesn't always work when processing a large scale of items, but I could be wrong, it might not work at all.
 3. It's important to know that, the ability to retrieve full comment threads is not fully implemented.
 
