@@ -24,7 +24,7 @@ std::string to_realtime(long timestamp)
 #if defined(_MSC_VER)
 	struct tm timeinfo;
 	localtime_s(&timeinfo, &ts);
-	std::strftime(str, 255), "%A, %B %e, %Y %H:%M %p %Z", &timeinfo);
+	std::strftime(str, 255, "%A, %B %e, %Y %H:%M %p %Z", &timeinfo);
 #else
 	struct tm* timeinfo = nullptr;
 	timeinfo = localtime(&ts);
@@ -36,7 +36,7 @@ std::string to_realtime(long timestamp)
 
 std::string get_time(std::string format)
 {
-	time_t t;
+	time_t t;  
 	time(&t);
 	char* datestr = new char[255];
 

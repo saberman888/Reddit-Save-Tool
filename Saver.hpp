@@ -40,7 +40,7 @@ public:
 	bool scan_cmd(int argc, char* argv[]);
 	State RetrieveComments(Item *i);
 	State AccessPosts(std::vector<Item*>& saved);
-	void WriteLinkCSV(std::vector<Item*> src) { std::vector<std::string> filter; write_links(src); }
+	void WriteLinkCSV(std::vector<Item*> src) { write_links(src); }
 	bool write_links(std::vector<Item*> src);
 	void download_content(std::vector<Item*> i);
 
