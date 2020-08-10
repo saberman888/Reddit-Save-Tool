@@ -52,11 +52,6 @@ public:
 	std::vector<std::string> whitelist, blacklist, uwhitelist, ublacklist, dblacklist, dwhitelist;
 	Sort sort;
 };
-
-struct creds {
-	std::string username, password, client_id, secret, user_agent;
-};
-
 // Item holds items from user's saved
 class Item
 {
