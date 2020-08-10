@@ -8,6 +8,10 @@
 #include "nlohmann/json.hpp"
 #include "curl/curl.h"
 
+constexpr int POST_LIMIT = 1000;
+constexpr int LIMIT_PER_TOKEN = 600;
+constexpr int RQ_PER_MINUTE = 60;
+
 #if defined(__cpp_lib_filesystem)
 	#include <filesystem>
 	namespace fs = std::filesystem;

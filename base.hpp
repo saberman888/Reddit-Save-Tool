@@ -6,9 +6,6 @@
 #include <iostream>
 #include <boost/algorithm/string.hpp>
 
-constexpr int POST_LIMIT = 1000;
-constexpr int LIMIT_PER_TOKEN = 600;
-constexpr int RQ_PER_MINUTE = 60;
 
 inline std::string bool2str(bool x) {
 	return (x ? "True" : "False");
@@ -24,15 +21,7 @@ std::string get_time(std::string format);
 // get current time in unix epoch time
 long get_epoch_time();
 
-class State
-{
-public:
-		long http_state;
-		std::string message;
-		State();
-};
-
-typedef struct _com
+typedef struct _Comment
 {
 	std::string author;
 	std::string body, orig_body;
@@ -69,8 +58,9 @@ struct creds {
 };
 
 // Item holds items from user's saved
-typedef struct _Item
+class Item
 {
+public:
 	std::string permalink, rha_permalink;
 	std::string author;
 	long created_utc;

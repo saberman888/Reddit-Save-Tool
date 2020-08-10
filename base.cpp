@@ -65,14 +65,14 @@ long get_epoch_time()
     
     return reinterpret_cast<long>(t);
 }
-bool _Item::IsVideo()
+bool Item::IsVideo()
 {
-	return (is_video || domain.rfind("v.redd.it", 0) != std::string::npos || url.rfind("gifv", 0) != std::string::npos);
+	return (is_video || domain.rfind("https://v.redd.it", 0) != std::string::npos);
 }
 
-bool _Item::IsPossibleImage()
+bool Item::IsPossibleImage()
 {
-	std::vector<std::string> urlsnext = { "i.imgur.com", "i.redd.it", ".jpeg", ".bmp", ".png", ".gif", ".jpg", ".tiff" };
+	std::vector<std::string> urlsnext = { "i.imgur.com", "i.redd.it", ".jpeg", ".bmp", ".png", ".gif", ".jpg", ".tiff", ".webp" };
 	for (std::string elem : urlsnext)
 		if (url.rfind(elem) != std::string::npos)
 			return true;
@@ -81,16 +81,15 @@ bool _Item::IsPossibleImage()
 
 // IsImgurLink only deals with single images whereas IsImgurAlbum deals with albums
 
-bool _Item::IsImgurAlbum()
+bool Item::IsImgurAlbum()
 {
 	return (url.rfind("https://imgur.com/a/", 0) != std::string::npos);
 }
 
-bool _Item::IsImgurLink()
+bool Item::IsImgurLink()
 {
 	return (url.rfind("https://imgur.com/", 0) != std::string::npos && url.rfind("https://imgur.com/a/",0) == std::string::npos);
 }
 
-State::State() : http_state(0), message("") {}
 
 CMDArgs::CMDArgs() : EnableImages(true), DisableComments(false), EnableText(true), RHA(false), limit(1000), username(""), sort(Subreddit), reverse(false), VideosEnabled(true), Verbose(false), EnableCommentThreads(false), EnableImgurAlbums(true){}
