@@ -4,7 +4,7 @@
 #include <chrono>
 #include <ctime>
 #include <fstream>
-
+#include "BasicRequest.hpp"
 #include "nlohmann/json.hpp"
 #include "curl/curl.h"
 
@@ -30,32 +30,41 @@ constexpr int RQ_PER_MINUTE = 60;
 #include <unistd.h>
 #include <sys/types.h>
 #include <pwd.h>
+constexpr bool IsUnixBased = true;
 #else
+constexpr bool IsUnixBased = false;
 #include <Synchapi.h>
 #endif
 
 class RedditAccess {
 public:
 	RedditAccess();
-	~RedditAccess();
-	void init_logs();
-	bool load_login_info();
+	bool LoadLogins();
 	/*obtain_token gets the access token from Redditand refreshes
 		for a new one when refresh is true*/
 	State AccessReddit() { return this->obtain_token(false); }
 	State RefreshToken() { return this->obtain_token(true); }
-	std::vector<struct creds*> accounts;
-	struct creds* Account;
-	// After stores the id for the next page of saved content
-	std::string after;
+
+	bool IsLoggedIn;
 	CMDArgs args;
+	fs::path StoragePath;
+
+private:
+	// Where we're going to store user information when we parse it from the config file
+	struct
+	{
+		std::string Username, Password;
+		std::string ClientId, Secret, UserAgent;
+	} UserAccount;
+
+	struct
+	{
+		int TotalPosts;
+		std::string after;
+		std::vector<Item> posts;
+	};
 
 	State obtain_token(bool refresh);
-	std::string token; // where our access token goes
-	std::fstream* log;
-	std::string logpath, mediapath;
-	std::streambuf* old_rdbuf;
-	bool is_logged_in;
 	/*
 		All the request_done and chrono related variables
 		keep track of how many requests are being done.
@@ -101,15 +110,4 @@ public:
 	State retrieve_album_images(std::string album_id, std::vector<std::string>& URLs);
 	State retrieve_imgur_image(std::string imghash, std::string& URL);
 	State download_item(const char* URL, std::string& buf);
-	/*
-
-	QFIO and JQFIO output text such as json responses into a file
-
-	QFIO is just for normal stuff like the header of a request while JQFIO is specifically for JSON
-	it parses it in nlohmann json first then pretty prints it to a file, but if it fails it just outputs normally to a file without pretty print
-
-	*/
-	void QFIO(std::string filename, std::string data);
-	void JQFIO(std::string filename, std::string json);
-
 };

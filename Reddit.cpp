@@ -1,61 +1,31 @@
 #include "Reddit.hpp"
 #include <iostream>
 
-void RedditAccess::init_logs() {
-
-    std::string datestr = get_time("%Y-%m-%d");
-    
-#if defined(USE_HOME_DIR)
-	char* homedir = getenv("HOME");
-	if(homedir == NULL)
-		homedir = getpwuid(getuid())->pw_dir;
-
-	this->mediapath = std::string(homedir) + "/RSA/media/" + datestr + "/" + Account->username + "/";
-	this->logpath = std::string(homedir) + "/RSA/logs/" + datestr + "/" + Account->username + "/";
-#else
-	this->logpath = std::string(fs::current_path().u8string()) + "/logs/" + datestr + "/" + Account->username + "/";
-	this->mediapath = std::string(fs::current_path().u8string()) + "/media/" + datestr + "/" + Account->username + "/";
-#endif
-	std::clog << "Current log to be generated at: " << this->logpath << std::endl;
-
-	fs::create_directories(logpath);
-
-	log = new std::fstream(logpath + Account->username + "_" + datestr + " info.log", std::ios::out);
-	old_rdbuf = std::clog.rdbuf();
-	std::clog.rdbuf(log->rdbuf());
-
-	std::clog << "Log generated at " << datestr << std::endl;
-	std::clog << "Beginning log." << std::endl;
-}
-
-RedditAccess::RedditAccess() : log(nullptr), is_logged_in(false), requests_done(0), request_done_in_current_minute(0)
+RedditAccess::RedditAccess() : IsLoggedIn(false), requests_done(0), request_done_in_current_minute(0)
 {
-}
-
-RedditAccess::~RedditAccess()
-{
-	if(is_logged_in){
-		std::clog.rdbuf(old_rdbuf);
-		log->close();
+	if (IsUnixBased)
+	{
+		// TODO: Give an option to store in anywhere other than the home directory
+		StoragePath = std::string(getenv("HOME")) + "/Reddit/";
+	}
+	else {
+		StoragePath = std::string::empty;
 	}
 }
 
-bool RedditAccess::load_login_info()
+bool RedditAccess::LoadLogins()
 {
 	bool success = false;
 	std::fstream info("settings.json", std::ios::in | std::ios::out);
 	if (!info.good())
 	{
 		info.open("settings.json", std::ios::out);
-		std::clog << "Failed to open settings.json" << std::endl;
 		nlohmann::json creds;
 		creds["accounts"] = nlohmann::json::array();
 		nlohmann::json account = {{ "client_id" ,"cid_here" }, { "secret","secret_here" }, { "username" , "username_here" }, { "password","password_here" }, { "user_agent", "useragent_here" }};
 		creds["accounts"].push_back(account);
 		creds["imgur"] = {{"client_id","ac_here"}};
 		info << creds.dump(4);
-		std::cout << "Could not find settings.json" << std::endl;
-		std::clog << "Recreating settings.json" << std::endl;
 		return success;
 	}
 
@@ -79,7 +49,6 @@ bool RedditAccess::load_login_info()
 				this->accounts.push_back(acs);
 				}
 			catch (nlohmann::json::out_of_range& e) {
-				std::clog << e.what() << std::endl;
 			}
 		}
 		if (args.username != "") {
@@ -93,20 +62,15 @@ bool RedditAccess::load_login_info()
 			}
 
 			if (!found) {
-				std::clog << "Username for: " << args.username << " is not in settings.json" << std::endl;
-				std::clog << "No username provided, using account of index: " << index << ", username of ";
 				this->Account = accounts[index];
-				std::clog << this->Account->username << std::endl;
 				return true;
 			}
 			this->Account = accounts[index];
-			std::clog << "Account " << Account->username << "is loaded." << std::endl;
 		}
 		else {
 			this->Account = accounts[0];
-			std::clog << "Account: " << this->Account->username << " loaded." << std::endl;
 		}
-		is_logged_in = true;
+		IsLoggedIn = true;
 
 
 		try {
@@ -122,8 +86,6 @@ bool RedditAccess::load_login_info()
 		success = true;
 	}
 	catch (nlohmann::json::exception& e) {
-		std::clog << e.what() << std::endl;
-		std::clog << "Failed to load credentials" << std::endl;
 		success = false;
 	}
 
@@ -170,9 +132,6 @@ State RedditAccess::obtain_token(bool refresh)
 			result = curl_easy_perform(handle);
 			curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &response.http_state);
 			
-#ifdef _DEBUG
-            QFIO("token_access.txt", json);
-#endif
 
 			if (result != CURLE_OK)
 			{
@@ -210,17 +169,14 @@ State RedditAccess::obtain_token(bool refresh)
 				catch (nlohmann::json::out_of_range&)
 				{
 					try {
-						std::clog << "Checking error.." << std::endl;
 						response.message = parse.at("message").get<std::string>();
 					}
 					catch (nlohmann::json::out_of_range&) {
 						try {
-							std::clog << "Checking if error is an invalid grant" << std::endl;
 							response.message = parse.at("invalid_grant").get<std::string>();
 							response.http_state = -1;
 						}
 						catch (nlohmann::json::out_of_range& e) {
-							std::clog << "Unknown error from obtain_token" << std::endl;
 							response.message = e.what();
 							response.http_state = -1;
 
@@ -261,7 +217,6 @@ void RedditAccess::is_mtime_up()
 #ifdef _DEBUG
 		std::cout << "60 requests limit per minute has hit, stalling." << std::endl;
 #endif
-		std::clog << "60 requests limit per minute has hit, stalling." << std::endl;
 		// Stall then reset time
 		#ifdef _WIN32
 		Sleep(60000);
@@ -272,7 +227,6 @@ void RedditAccess::is_mtime_up()
 		#endif
 		restart_minute_clock();
 		} else if (mnow >= mthen) {
-		std::clog << "Restarting the minute clock!" << std::endl;
 		restart_minute_clock();
 	}
 }
@@ -283,9 +237,6 @@ void RedditAccess::tick()
 	if (now < then) {
 		this->request_done_in_current_minute += 1;
 	}
-
-	std::clog << "Requests done: " << requests_done << std::endl;
-	std::clog << "Requests done in current minute: " << this->request_done_in_current_minute << std::endl;
 }
 
 State RedditAccess::retrieve_imgur_image(std::string imghash, std::string& URL)
@@ -320,10 +271,6 @@ State RedditAccess::retrieve_imgur_image(std::string imghash, std::string& URL)
 		curl_global_cleanup();
 		curl_easy_cleanup(handle);
 		curl_free(header);
-
-		QFIO(this->logpath + std::string("/imgur_image_" + imghash + std::string(".txt")), rdata);
-
-		QFIO(this->logpath + std::string("/imgur_header_") + imghash + std::string(".txt"), hd);
 
 		if(result != CURLE_OK)
 		{
@@ -382,8 +329,6 @@ State RedditAccess::retrieve_album_images(std::string albumhash, std::vector<std
 		 curl_easy_cleanup(handle);
 		 curl_global_cleanup();
 		 curl_slist_free_all(header);
-
-		 JQFIO(std::string("imgur_album_") + albumhash + ".txt", rdata);
 
 		 if(result != CURLE_OK)
 		 {
@@ -447,28 +392,4 @@ State RedditAccess::download_item(const char* URL, std::string& buf)
 		s.message = "Failed to initialize libcurl handle!";
 	}
 	return s;
-}
-
-
-void RedditAccess::QFIO(std::string filename, std::string data)
-{
-	if(args.Verbose){
-		std::clog << "Outputting " << filename << std::endl;
-		std::ofstream(filename.c_str(), std::ios::out) << data;
-	}
-}
-
-void RedditAccess::JQFIO(std::string filename, std::string json)
-{
-	if(args.Verbose){
-		nlohmann::json  data;
-		try {
-			data = nlohmann::json::parse(json);
-
-			std::ofstream(filename.c_str(), std::ios::out) << std::setw(4) << data;
-		}
-		catch (nlohmann::json::parse_error&) {
-			std::ofstream(filename.c_str(), std::ios::out) << json;
-		}
-	}
 }
