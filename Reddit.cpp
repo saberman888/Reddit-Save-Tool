@@ -3,7 +3,7 @@
 
 void RedditAccess::init_logs() {
 
-    std::string datestr = get_time("%Y-%m-%d ");
+    std::string datestr = get_time("%Y-%m-%d");
     
 #if defined(USE_HOME_DIR)
 	char* homedir = getenv("HOME");
@@ -411,14 +411,14 @@ State RedditAccess::retrieve_album_images(std::string albumhash, std::vector<std
 	return s;
 }
 
-State RedditAccess::download_item(const char* URL, std::string dest, std::string fn)
+State RedditAccess::download_item(const char* URL, std::string& buf)
 {
 
 	//std::cout << "Retrieving Imgur album" << std::endl;
 	CURL* handle;
 	CURLcode result;
 	State s;
-	std::string rdata, hd;
+	std::string hd;
 
 	handle = curl_easy_init();
 	if(handle)
@@ -427,7 +427,7 @@ State RedditAccess::download_item(const char* URL, std::string dest, std::string
 		curl_easy_setopt(handle, CURLOPT_URL, URL);
 		curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
 		curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, &writedat);
-		curl_easy_setopt(handle, CURLOPT_WRITEDATA, &rdata);
+		curl_easy_setopt(handle, CURLOPT_WRITEDATA, buf);
 		curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(handle, CURLOPT_HEADERDATA, &hd);
 		#ifdef _DEBUG
@@ -441,16 +441,7 @@ State RedditAccess::download_item(const char* URL, std::string dest, std::string
 		if(result != CURLE_OK)
 		{
 			s.message = curl_easy_strerror(result);
-		} else {
-			//check if the destination exists
-			if(!fs::exists(dest))
-				fs::create_directories(dest);
-			// store image
-			std::fstream out(dest + "/" + fn, std::ios::out);
-			out << rdata;
 		}
-
-		s.message = "";
 	} else {
 		s.http_state = -1;
 		s.message = "Failed to initialize libcurl handle!";

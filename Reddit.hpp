@@ -96,7 +96,7 @@ public:
 	bool imgur_enabled;
 	State retrieve_album_images(std::string album_id, std::vector<std::string>& URLs);
 	State retrieve_imgur_image(std::string imghash, std::string& URL);
-	State download_item(const char* URL, std::string dest, std::string fn);
+	State download_item(const char* URL, std::string& buf);
 	/*
 
 	QFIO and JQFIO output text such as json responses into a file

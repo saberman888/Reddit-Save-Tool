@@ -2,11 +2,10 @@
 
 std::string stripfname(std::string src)
 {
-	std::string result = src;
 	std::string characters[] = { "/", "\\", "?", "%", "*", ":", "|", "\"", "<", ">", ".", "\'", "&", ",", "(", ")","#",";"};
 	for (std::string chr : characters)
-		boost::erase_all(result, chr);
-	return result;
+		boost::erase_all(src, chr);
+	return src;
 }
 
 size_t writedat(char* buffer, size_t size, size_t nmemb, std::string& src)
@@ -25,11 +24,11 @@ std::string to_realtime(long timestamp)
 #if defined(_MSC_VER)
 	struct tm timeinfo;
 	localtime_s(&timeinfo, &ts);
-	std::strftime(str, sizeof(str), "%A, %B %e, %Y %H:%M %p %Z", &timeinfo);
+	std::strftime(str, 255, "%A, %B %e, %Y %H:%M %p %Z", &timeinfo);
 #else
 	struct tm* timeinfo = nullptr;
 	timeinfo = localtime(&ts);
-	std::strftime(str, sizeof(str), "%A, %B %e, %Y %H:%M %p %Z", timeinfo);
+	std::strftime(str, 255, "%A, %B %e, %Y %H:%M %p %Z", timeinfo);
 #endif
 
 	return std::string(str);
@@ -37,21 +36,34 @@ std::string to_realtime(long timestamp)
 
 std::string get_time(std::string format)
 {
-    time_t t;
+	time_t t;  
 	time(&t);
-	char datestr[format.size()];
+	char* datestr = new char[255];
 
 #if defined(_MSC_VER)
 	struct tm timeinfo;
 	localtime_s(&timeinfo, &t);
-	std::strftime(datestr, sizeof(datestr),format.c_str(), &timeinfo);
+	std::strftime(datestr, 255, format.c_str(), &timeinfo);
 #else
 	struct tm* timeinfo = nullptr;
 	timeinfo = localtime(&t);
-	std::strftime(datestr, sizeof(datestr), format.c_str(), timeinfo);
+	std::strftime(datestr, 255, format.c_str(), timeinfo);
 #endif
+	std::string sdatestr = datestr;
+
+	delete[] datestr;
+	return sdatestr;
+
+}
+
+long get_epoch_time()
+{
+    time_t t;
+    struct tm * ttm;
     
-    return std::string(datestr);
+    time(&t);
+    
+    return reinterpret_cast<long>(t);
 }
 bool _Item::IsVideo()
 {
