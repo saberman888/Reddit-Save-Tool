@@ -237,5 +237,3 @@ void RedditAccess::tick()
 	if (now < then) {
 		this->request_done_in_current_minute += 1;
 	}
-}
-
