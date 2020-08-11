@@ -37,7 +37,7 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	if (!s.load_login_info())
+	if (!s.LoadLogins())
 	{
 		return -1;
 	}

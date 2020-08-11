@@ -3,8 +3,17 @@
 std::string stripfname(std::string src)
 {
 	std::string characters[] = { "/", "\\", "?", "%", "*", ":", "|", "\"", "<", ">", ".", "\'", "&", ",", "(", ")","#",";"};
-	for (std::string chr : characters)
-		boost::erase_all(src, chr);
+	auto MatchesChar = [&characters](std::string src) -> bool
+	{
+
+	};
+	/*for (std::string chr : characters)
+		for(const auto &schr : src)
+			if(schr == chr)*/
+	src.erase(
+		std::remove_if(src.begin(), src.end(), )
+	)
+
 	return src;
 }
 
