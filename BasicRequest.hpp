@@ -27,10 +27,15 @@ class BasicRequest
 {
 public:
 	BasicRequest() : headers(nullptr), Handle(nullptr) {}
+	void Setup(std::string URL, bool POST = false);
 	void SetHeaders(std::string header);
 	template<typename Y>
 	void SetAttribute(CURLoption option, Y data);
-	State SendRequest(std::string URL, bool POST=false);
+	void WriteTo(std::string& buffer);
+	void AddParams(std::string params);
+	void AddUserPWD(std::string usrpwd);
+	void AddUserAgent(std::string useragent);
+	State SendRequest();
 	void Cleanup();
 
 private:
@@ -38,4 +43,5 @@ private:
 	CURLcode result;
 	struct curl_slist *headers;
 	State Perform();
+	size_t writedat(char* buffer, size_t size, size_t nmemb, std::string& src);
 };

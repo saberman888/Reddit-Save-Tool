@@ -2,7 +2,7 @@
 #include <iostream>
 
 
-State BasicRequest::SendRequest(std::string URL, bool POST)
+void BasicRequest::Setup(std::string URL, bool POST)
 {
 	Handle = curl_easy_init();
 	if (!Handle)
@@ -13,6 +13,10 @@ State BasicRequest::SendRequest(std::string URL, bool POST)
 	SetAttribute(CURLOPT_URL, URL.c_str());
 	if (POST)
 		SetAttribute(CURLOPT_POST, 1L);
+}
+
+State BasicRequest::SendRequest()
+{
 	return Perform();
 }
 
@@ -28,15 +32,15 @@ void BasicRequest::Cleanup()
 
 void BasicRequest::SetHeaders(std::string header)
 {
-	assert(!Handle);
-	curl_slist_append(headers, header.c_str());
+	assert(Handle != nullptr);
+	headers = curl_slist_append(headers, header.c_str());
 }
 
 template<typename Y>
 void BasicRequest::SetAttribute(CURLoption option, Y data)
 {
-	assert(!Handle);
-	result = curl_easy_setopt(Handle, option, data);
+	assert(Handle != nullptr);
+	result = curl_easy_setopt(this->Handle, option, data);
 	if (result != CURLE_OK)
 	{
 		std::cerr << curl_easy_strerror(result) << std::endl;
@@ -44,12 +48,35 @@ void BasicRequest::SetAttribute(CURLoption option, Y data)
 	}
 }
 
+void BasicRequest::WriteTo(std::string& buffer)
+{
+	SetAttribute(CURLOPT_WRITEFUNCTION, &writedat);
+	SetAttribute(CURLOPT_WRITEDATA, buffer);
+}
+
+void BasicRequest::AddParams(std::string params)
+{
+	SetAttribute(CURLOPT_POSTFIELDS, params.c_str());
+}
+
+void BasicRequest::AddUserPWD(std::string usrpwd)
+{
+	SetAttribute(CURLOPT_USERPWD, usrpwd.c_str());
+}
+
+void BasicRequest::AddUserAgent(std::string useragent)
+{
+	SetAttribute(CURLOPT_USERAGENT, useragent.c_str());
+}
+
 
 State BasicRequest::Perform()
 {
-	assert(!Handle);
+	assert(Handle != nullptr);
 	State ReturnResult;
-	result = curl_easy_perform(Handle);
+	if (headers != nullptr)
+		SetAttribute(CURLOPT_HTTPHEADER, headers);
+	this->result = curl_easy_perform(Handle);
 
 	curl_easy_getinfo(Handle, CURLINFO_RESPONSE_CODE, &ReturnResult.http_state);
 	if (result != CURLE_OK) {
@@ -57,6 +84,15 @@ State BasicRequest::Perform()
 		std::cerr << curl_easy_strerror(result) << std::endl;
 	}
 	return ReturnResult;
+}
+
+size_t BasicRequest::writedat(char* buffer, size_t size, size_t nmemb, std::string& src)
+{
+	for (size_t i = 0; i < size * nmemb; i++)
+	{
+		src.push_back(buffer[i]);
+	}
+	return size * nmemb;
 }
 
 _BasicRequestRAII::_BasicRequestRAII()
@@ -68,6 +104,7 @@ _BasicRequestRAII::_BasicRequestRAII()
 		abort();
 	}
 }
+
 
 _BasicRequestRAII::~_BasicRequestRAII()
 {
