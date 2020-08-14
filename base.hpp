@@ -4,22 +4,12 @@
 #include "nlohmann/json.hpp"
 #include <iomanip>
 #include <iostream>
-#include <boost/algorithm/string.hpp>
 
-
-inline std::string bool2str(bool x) {
-	return (x ? "True" : "False");
-}
 
 std::string stripfname(std::string src);
-size_t writedat(char* buffer, size_t size, size_t nmemb, std::string& src);
 
 // Convert unix epoch time to real date time
 std::string to_realtime(long timestamp);
-//Get current time as string
-std::string get_time(std::string format);
-// get current time in unix epoch time
-long get_epoch_time();
 
 typedef struct _Comment
 {
@@ -78,8 +68,8 @@ public:
 	//Comment comment;
 
 	bool IsVideo();
-	// This function quickly checks if a url is an imaged based off the domain name, and it is used for stats not to really determine if it seriously is an image
-	bool IsPossibleImage();
+	// This function quickly checks if a url is an imaged based off the domain name and file extension if possible
+	bool IsImage();
 	bool IsImgurLink();
 	bool IsImgurAlbum();
 }Item;
