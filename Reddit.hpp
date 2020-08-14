@@ -1,16 +1,11 @@
 #pragma once
 #include <string>
 #include "base.hpp"
-#include <chrono>
-#include <ctime>
 #include <fstream>
 #include "BasicRequest.hpp"
+#include "base.hpp"
 #include "nlohmann/json.hpp"
 #include "curl/curl.h"
-
-constexpr int POST_LIMIT = 1000;
-constexpr int LIMIT_PER_TOKEN = 600;
-constexpr int RQ_PER_MINUTE = 60;
 
 #if defined(__cpp_lib_filesystem)
 	#include <filesystem>
@@ -27,42 +22,30 @@ constexpr int RQ_PER_MINUTE = 60;
 
 
 #if defined(unix) || defined(_unix)
-#include <unistd.h>
-#include <sys/types.h>
-#include <pwd.h>
 constexpr bool IsUnixBased = true;
 #else
 constexpr bool IsUnixBased = false;
-#include <Synchapi.h>
 #endif
 
 class RedditAccess {
 public:
 	RedditAccess();
-	bool LoadLogins();
-	/*obtain_token gets the access token from Redditand refreshes
-		for a new one when refresh is true*/
-	State AccessReddit() { return this->obtain_token(false); }
-	State RefreshToken() { return this->obtain_token(true); }
-
+	// obtain_token gets the access token from Reddit*/
+	State AccessReddit() { return this->obtain_token(); }
+	State RedditGetRequest(std::string endpoint, std::string& buffer);
 	bool IsLoggedIn;
-	CMDArgs args;
-	fs::path StoragePath;
+	fs::path MediaPath;
+	BasicRequest RedditHandle;
 
-private:
 	// Where we're going to store user information when we parse it from the config file
 	struct
 	{
+		std::string Token;
 		std::string Username, Password;
 		std::string ClientId, Secret, UserAgent;
 	} UserAccount;
 
-	struct
-	{
-		int TotalPosts;
-		std::string after;
-		std::vector<Item> posts;
-	};
-
-	State obtain_token(bool refresh);
+private:
+	State obtain_token();
+	std::string ReadJson(std::string json);
 };
