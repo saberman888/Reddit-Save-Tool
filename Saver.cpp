@@ -2,63 +2,127 @@
 #include <iostream>
 
 
-State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after)
+bool Saver::LoadLogins()
 {
-	std::clog << "Getting saved items" << std::endl;
-	CURL *handle;
-	CURLcode result;
-	State response;
-	struct curl_slist* header = nullptr;
-	std::string jresponse, hresponse;
+	bool success = false;
+	std::fstream input("settings.json", std::ios::in | std::ios::out);
+	if (!input.good())
+	{
+		// If the config file containing accounts is not present, then write one with dummy values so the end user can fill it in
+		input.open("settings.json", std::ios::out);
+		nlohmann::json settingsfilling =
+		{
+			{"accounts", {"client_id", "CLIENT_ID_HERE"},
+			{"secret", "SECRET_HERE"},
+			{"username", "USERNAME_HERE"},
+			{"password", "PASSWORD_HERE"},
+			{"useragent", "USERAGENT_HERE"}},
+			{"imgur_client_id", "IMGUR_CLIENT_ID_HERE"}
+		};
 
-	handle = curl_easy_init();
+		input << settingsfilling.dump(4);
+		return success;
+	}
 
-	if (handle) {
-		std::clog << "Setting up header and request." << std::endl;
-		std::string authorization_header = "Authorization: bearer ";
-		authorization_header += token;
-
-		header = curl_slist_append(header, authorization_header.c_str());
-
-		CURLcode gres = curl_global_init(CURL_GLOBAL_ALL);
-		if (gres != CURLE_OK) {
-			curl_easy_cleanup(handle);
-			response.message = curl_easy_strerror(gres);
-			response.http_state = -1;
+	// Read the config file into root
+	nlohmann::json root;
+	input >> root;
+	if (root.contains("accounts"))
+	{
+		nlohmann::json account;
+		if (!args.username.empty())
+		{
+			for (int i = 0; i < root.at("accounts").size(); i++)
+			{
+				if (args.username == account.at("username"))
+				{
+					account = root.at("accounts")[i];
+				}
+			}
 		}
 		else {
-			std::string url = "https://oauth.reddit.com/user/";
-			url += Account->username + "/saved/?limit=" + std::to_string(100);
-			url += "&after=" + after;
+			account = root.at("")
+		}
+		else {
 
-			std::clog << "URL has been setup with an after of " << after << std::endl;
+		}
+	}
+	else {
+		std::cerr << "Error, accounts array is not present" << std::endl;
+		return success;
+	}
+
+	try {
+		input >> root;
+		size_t acc_size = root.at("accounts").size();
+		for (nlohmann::json& elem : root.at("accounts"))
+		{
+			try {
+				struct creds* acs = new struct creds;
+				acs->username = elem.at("username").get<std::string>();
+				acs->password = elem.at("password").get<std::string>();
+				acs->client_id = elem.at("client_id").get<std::string>();
+				acs->secret = elem.at("secret").get<std::string>();
+				acs->user_agent = elem.at("user_agent").get<std::string>();
 
 
-			curl_easy_setopt(handle, CURLOPT_URL, url.c_str());
-			curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header);
-			curl_easy_setopt(handle, CURLOPT_USERAGENT, Account->user_agent.c_str());
-			curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
-			curl_easy_setopt(handle, CURLOPT_WRITEDATA, &jresponse);
-			curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, &writedat);
-			curl_easy_setopt(handle, CURLOPT_HEADERDATA, &hresponse);
-
-#ifdef _DEBUG
-			curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
-#endif
-			result = curl_easy_perform(handle);
-			curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &response.http_state);
-			curl_easy_cleanup(handle);
-			curl_global_cleanup();
-			curl_free(header);
-
-			tick();
-			QFIO(logpath + "saved_header_data_" + std::to_string(requests_done) +".txt", hresponse);
-			JQFIO(logpath + "saved_json_data_" + std::to_string(requests_done) + ".txt", jresponse);
-
-			if (result != CURLE_OK)
-			{
-				response.message = curl_easy_strerror(result);
+				this->accounts.push_back(acs);
 			}
+			catch (nlohmann::json::out_of_range& e) {
+			}
+		}
+		if (args.username != "") {
+			int index = 0;
+			bool found = false;
+			for (size_t i = 0; i < acc_size; i++) {
+				if (std::string usr = root.at("accounts")[i].at("username").get<std::string>(); usr == args.username) {
+					index = i;
+					found = true;
+				}
+			}
+
+			if (!found) {
+				this->Account = accounts[index];
+				return true;
+			}
+			this->Account = accounts[index];
+		}
+		else {
+			this->Account = accounts[0];
+		}
+		IsLoggedIn = true;
+
+
+		try {
+			auto imgur = root.at("imgur");
+
+			this->imgur_client_id = imgur.at("client_id").get<std::string>();
+			this->imgur_enabled = true;
+			std::cout << "Imgur support loaded." << std::endl;
+		}
+		catch (nlohmann::json::exception&) {
+			this->imgur_enabled = false;
+			std::cout << "Warning: Imgur albums will only be downloaded as a zip." << std::endl;
+		}
+		success = true;
+	}
+	catch (nlohmann::json::exception& e) {
+		success = false;
+	}
+
+	return success;
+}
+
+
+State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after)
+{
+	std::string URL = 
+		"https://oauth.reddit.com/user/"
+		+ UserAccount.Username
+		+ "/saved/?limit=" 
+		+ std::to_string(100)
+		+"&after=" + after;
+	RedditHandle.Setup(URL);
 			else {
 
 				std::clog << "Attempting to parse json structures for saved items" << std::endl;
@@ -350,104 +414,6 @@ State Saver::retrieve_comments(Item* i)
 	std::clog << "get_saved_items result state: " << response.http_state << ", " << response.message << std::endl;
 	return response;
 
-}
-bool Saver::write_links(std::vector<Item*> src)
-{
-    if (src.size() < (unsigned)args.limit)
-		args.limit = (int)src.size();
-    
-	std::clog << "Writing links into CSV" << std::endl;
-    std::string datestr = get_time("/%Y/%m/%d/");
-
-	std::string path;
-	path = "data/" + Account->username + datestr;
-
-
-	fs::create_directories(path);
-	std::string filename = path + "links.csv";
-	//std::fstream out(filename.c_str(), std::ios::out);
-    CSVWriter out(filename);
-    
-	// output header
-	std::vector<std::string> header = {"author", "created_utc", "domain", "id", "is_self", "num_comments", "over_18", "permalink", "retrieved_on", "score", "selftext", "stickied", "subreddit_id", "title", "url"};
-    out.addDatainRow(header.begin(), header.end());
-    
-	for (size_t j = 0; j < args.limit; j++)
-	{
-		auto elem = src[j];
-
-        std::string text, title;
-        if(elem->kind == "t3")
-        {
-            text = elem->self_text;
-        } else if(elem->kind == "t1")
-        {
-            title = "[Comment by " + elem->author +" on ]: " + elem->title;
-            text = elem->body;
-        }
-        
-		std::vector<std::string> row = {
-                elem->author,
-                std::to_string(elem->created_utc),
-                elem->domain,
-                elem->id,
-                bool2str(elem->is_self),
-                std::to_string(elem->num_comments),
-                bool2str(elem->over_18),
-                elem->rha_permalink,
-                std::to_string(get_epoch_time()),
-                std::to_string(elem->score),
-                text,
-                bool2str(elem->stickied),
-                elem->subreddit_id,
-                elem->title,
-                elem->url
-            };
-            out.addDatainRow(row.begin(), row.end());
-		std::cout << "Writing links: " << j+1 << " of " << args.limit << std::endl;
-        
-		// Before writing comments, retrieve them
-		std::cout << "Retrieving comments" << std::endl;
-		retrieve_comments(elem);
-        std::cout << "Writing comments" << std::endl;
-        CSVWriter com_out(path + elem->id + ".csv");
-        std::vector<std::string> cheader = {
-            "author",
-            "body",
-            "created_utc",
-            "id",
-            "link_id",
-            "parent_id",
-            "score",
-            "stickied",
-            "subreddit_id"
-        };
-        
-        com_out.addDatainRow(cheader.begin(), cheader.end());
-        
-        for (size_t i = 0; i < elem->comments.size(); i++) {
-            auto celem = elem->comments[i];
-            
-            std::vector<std::string> comment = {
-                celem->author,
-                "\"" + celem->body + "\"",
-                std::to_string(celem->created_utc),
-                celem->id,
-                celem->link_id,
-                celem->parent_id,
-                std::to_string(celem->score),
-                bool2str(celem->stickied),
-                celem->subreddit_id
-            };
-            com_out.addDatainRow(comment.begin(),comment.end());
-            
-            std::cout << "Writing comment: " << i+1 << " of " << elem->comments.size() << std::endl;
-
-        }
-
-	}
-	return true;
-}
 
 
 void Saver::download_content(std::vector<Item*> i)

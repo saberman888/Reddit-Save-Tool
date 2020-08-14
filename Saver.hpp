@@ -17,7 +17,6 @@
 #include "boost/algorithm/string.hpp"
 #include "base.hpp"
 #include "Reddit.hpp"
-#include "csv.hpp"
 
 #if defined(__cpp_lib_filesystem)
 	#include <filesystem>
@@ -37,14 +36,15 @@ class Saver : public RedditAccess
 {
 public:
 	Saver();
+	bool LoadLogins();
 	bool scan_cmd(int argc, char* argv[]);
 	State RetrieveComments(Item *i);
 	State AccessPosts(std::vector<Item*>& saved);
 	void WriteLinkCSV(std::vector<Item*> src) { write_links(src); }
-	bool write_links(std::vector<Item*> src);
 	void download_content(std::vector<Item*> i);
 
 private:
+	CMDArgs args;
 	State get_saved_items(std::vector< Item* >& sitem, std::string after);
 	State retrieve_comments(Item* i);
 };
