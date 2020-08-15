@@ -14,21 +14,27 @@
 #include <map>
 
 #include "curl/curl.h"
-#include "boost/algorithm/string.hpp"
 #include "base.hpp"
 #include "Reddit.hpp"
 
 #if defined(__cpp_lib_filesystem)
-	#include <filesystem>
-	namespace fs = std::filesystem;
+#include <filesystem>
+namespace fs = std::filesystem;
 #elif defined(__cpp_lib_experimental_filesystem)
-	#include <experimental/filesystem>
-	namespace fs = std::experimental::filesystem;
+#include <experimental/filesystem>
+namespace fs = std::experimental::filesystem;
 #elif defined(USE_EXP_FS)
-	#include <experimental/filesystem>
-	namespace fs = std::experimental::filesystem;
+#include <experimental/filesystem>
+namespace fs = std::experimental::filesystem;
 #else
-	#error "No filesystem support found :("
+#error "No filesystem support found :("
+#endif
+
+
+#if defined(unix) || defined(_unix)
+constexpr bool IsUnixBased = true;
+#else
+constexpr bool IsUnixBased = false;
 #endif
 
 
@@ -37,6 +43,8 @@ class Saver : public RedditAccess
 public:
 	Saver();
 	bool LoadLogins();
+	bool IsLoggedIn;
+	fs::path MediaPath;
 	bool scan_cmd(int argc, char* argv[]);
 	State RetrieveComments(Item *i);
 	State AccessPosts(std::vector<Item*>& saved);

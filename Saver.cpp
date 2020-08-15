@@ -116,10 +116,10 @@ bool Saver::LoadLogins()
 
 State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after)
 {
-	std::string URL = 
+	std::string URL =
 		"https://oauth.reddit.com/user/"
 		+ UserAccount.Username
-		+ "/saved/?limit=" 
+		+ "/saved/?limit="
 		+ std::to_string(100)
 		+"&after=" + after;
 	RedditHandle.Setup(URL);
@@ -178,7 +178,7 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after)
 
 							std::string id = elem.at("data").at("link_id").get<std::string>();
 							id = id.substr(3, id.size());
-                            
+
                             //it->depth = elem.at("data").at("depth").get<int>();
 
 							it->id = id;
@@ -190,7 +190,7 @@ State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after)
 							it->is_self = elem.at("data").at("is_self").get<bool>();
 							try {
 								it->is_video = elem.at("data").at("is_video").get<bool>();
-                                
+
                                 nlohmann::json rvideo = elem.at("data").at("media").at("reddit_video");
 
 
@@ -673,7 +673,7 @@ void Saver::download_content(std::vector<Item*> i)
                             out << elem->url;
 						if (elem->kind == "t1"){
 							out << elem->orig_body << std::endl;
-                            
+
                             /*if(!elem->comments.empty())
                             {
                                 TODO: Implement adding child comments to the parent
@@ -700,8 +700,16 @@ void Saver::download_content(std::vector<Item*> i)
 	}
 }
 
-Saver::Saver() : RedditAccess()
+Saver::Saver() : RedditAccess(), IsLoggedIn(false)
 {
+	if (IsUnixBased)
+	{
+		// TODO: Give an option to store in anywhere other than the home directory
+		MediaPath = std::string(getenv("HOME")) + "/Reddit/";
+	}
+	else {
+		MediaPath = std::string::empty;
+	}
 }
 
 bool Saver::scan_cmd(int argc, char* argv[])

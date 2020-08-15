@@ -1,16 +1,8 @@
 #include "Reddit.hpp"
 #include <iostream>
 
-RedditAccess::RedditAccess() : IsLoggedIn(false)
+RedditAccess::RedditAccess()
 {
-	if (IsUnixBased)
-	{
-		// TODO: Give an option to store in anywhere other than the home directory
-		MediaPath = std::string(getenv("HOME")) + "/Reddit/";
-	}
-	else {
-		MediaPath = std::string::empty;
-	}
 }
 
 
@@ -31,7 +23,7 @@ State RedditAccess::RedditGetRequest(std::string endpoint, std::string& buffer)
 
 std::string RedditAccess::ReadJson(std::string json)
 {
-	
+
 	State result;
 	try {
 		nlohmann::json parse = nlohmann::json::parse(json);
