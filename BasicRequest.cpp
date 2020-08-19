@@ -49,7 +49,7 @@ void BasicRequest::SetOpt(CURLoption option, Y data)
 }
 
 template<typename Y>
-void BasicRequest::GetInfo(CURLoption option, Y data)
+void BasicRequest::GetInfo(CURLINFO option, Y data)
 {
 	assert(Handle != nullptr);
 	result = curl_easy_getinfo(this->Handle, option, data);

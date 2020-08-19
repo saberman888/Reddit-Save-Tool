@@ -114,306 +114,14 @@ bool Saver::LoadLogins()
 }
 
 
-State Saver::get_saved_items(std::vector< Item* >& sitem, std::string after)
+State Saver::RetrieveSaved(std::string& buffer, std::string after)
 {
-	std::string URL =
-		"https://oauth.reddit.com/user/"
-		+ UserAccount.Username
+		std::string endpoint = UserAccount.Username
 		+ "/saved/?limit="
-		+ std::to_string(100)
-		+"&after=" + after;
-	RedditHandle.Setup(URL);
-			else {
+		+ std::to_string(100);
 
-				std::clog << "Attempting to parse json structures for saved items" << std::endl;
-				try {
-					nlohmann::json root = nlohmann::json::parse(jresponse);
-					auto children = root.at("data").at("children");
-					if (root.at("data").at("after").is_null())
-						this->after = "";
-					else
-						this->after = root.at("data").at("after").get<std::string>();
-
-#ifdef _DEBUG
-					std::cout << "After: " << this->after << std::endl;
-#endif
-
-					std::clog << "The after is: " << this->after << std::endl;
-
-					for(size_t j = 0; j < children.size(); j++)
-					{
-						auto& elem = children[j];
-						Item* it = new Item;
-						it->kind = elem.at("kind").get<std::string>();
-
-						if (it->kind == "t1") {
-							std::clog << "Item is a comment" << std::endl;
-							it->fullname = elem.at("data").at("link_id").get<std::string>();
-							it->url = elem.at("data").at("link_url").get<std::string>();
-							it->is_self = false;
-							try {
-								it->is_video = elem.at("data").at("is_video").get<bool>();
-							}
-							catch (nlohmann::json::out_of_range& e) {
-								it->is_video = false;
-							}
-							it->self_text = "";
-							it->domain = "";
-							std::string title = elem.at("data").at("link_title").get<std::string>();
-							boost::replace_all(title, ",", "&#44;");
-							boost::replace_all(title, "\"", "&#34;");
-							it->title = title;
-							it->orig_body = elem.at("data").at("body").get<std::string>();
-
-                            boost::replace_all(it->body, ",", "&#44;");
-                            boost::replace_all(it->body, "\"", "&#34;");
-                            boost::replace_all(it->body, "\n", "&#10;");
-                            boost::replace_all(it->body, "\r", "&#13;");
-
-							it->body = "\"" + it->body + "\"";
-
-							std::string permalink = elem.at("data").at("permalink").get<std::string>();
-							it->permalink = permalink;
-
-
-							std::string id = elem.at("data").at("link_id").get<std::string>();
-							id = id.substr(3, id.size());
-
-                            //it->depth = elem.at("data").at("depth").get<int>();
-
-							it->id = id;
-						}
-						else if (it->kind == "t3") {
-							std::clog << "Item is a post" << std::endl;
-							it->fullname = elem.at("data").at("name").get<std::string>();
-							it->url = elem.at("data").at("url").get<std::string>();
-							it->is_self = elem.at("data").at("is_self").get<bool>();
-							try {
-								it->is_video = elem.at("data").at("is_video").get<bool>();
-
-                                nlohmann::json rvideo = elem.at("data").at("media").at("reddit_video");
-
-
-								it->fallback_url = rvideo.at("fallback_url").get<std::string>();
-								it->is_gif = rvideo.at("is_gif").get<bool>();
-
-								std::size_t size = it->fallback_url.substr(it->fallback_url.find("DASH")).size();
-								std::string audio_result = it->fallback_url.substr(0, it->fallback_url.size()-(int)size);
-								it->audio_url = audio_result + "audio";
-
-								#ifdef _DEBUG
-								std::clog << "fallback URL for: " << it->id << " is " << it->fallback_url << std::endl;
-								std::clog << "With an Audio url for: " << it->audio_url << std::endl;
-
-								std::cout << "fallback URL for: " << it->id << " is " << it->fallback_url << std::endl;
-								std::cout << "With an Audio url for: " << it->audio_url << std::endl;
-								#endif
-							}
-							catch (nlohmann::json::exception& e) {
-								it->is_video = false;
-							}
-							if (it->is_self)
-							{
-								it->orig_self_text = elem.at("data").at("selftext").get<std::string>();
-								it->self_text = it->orig_self_text;
-
-                                boost::replace_all(it->self_text, ",", "&#44;");
-                                boost::replace_all(it->self_text, "\"", "&#34;");
-                                boost::replace_all(it->self_text, "\'", "&#40;");
-                                boost::replace_all(it->self_text, "\n", "&#10;");
-                                boost::replace_all(it->self_text, "\r", "&#13;");
-							}
-							it->domain = elem.at("data").at("domain").get<std::string>();
-							std::string title = elem.at("data").at("title").get<std::string>();
-							boost::replace_all(title, ",", "&#44;");
-							boost::replace_all(title, "\"", "&#34;");
-							boost::replace_all(title, "\'", "&#40;");
-							it->title = title;
-							it->permalink = elem.at("data").at("permalink").get<std::string>();
-
-							it->id = elem.at("data").at("id").get<std::string>();
-						}
-						if (!elem.at("data").at("author").is_null())
-							it->author = elem.at("data").at("author").get<std::string>();
-						else
-							it->author = "[deleted]";
-						std::clog << "ID: " << it->id << std::endl;
-						it->created_utc = elem.at("data").at("created_utc").get<long>();
-						it->subreddit = elem.at("data").at("subreddit").get<std::string>();
-						boost::algorithm::to_lower(it->subreddit);
-						it->num_comments = elem.at("data").at("num_comments").get<int>();
-						it->over_18 = elem.at("data").at("over_18").get<bool>();
-						it->score = elem.at("data").at("score").get<int>();
-						it->stickied = elem.at("data").at("stickied").get<bool>();
-						it->subreddit_id = elem.at("data").at("subreddit_id").get<std::string>();
-
-						// replace permalink if
-						if (args.RHA) {
-							it->rha_permalink = it->permalink;
-							it->rha_permalink.replace(0, it->subreddit.size() + 3, "/r/" + Account->username);
-						}
-
-						sitem.push_back(it);
-						std::clog << it->permalink << std::endl;
-						std::cout << it->permalink << std::endl;
-					}
-
-				}
-				catch (nlohmann::json::exception & e) {
-#ifdef _DEBUG
-					std::cout << e.what() << std::endl;
-#endif
-
-					std::clog << e.what() << std::endl;
-					response.http_state = -1;
-					response.message = e.what();
-					std::clog << "get_saved_items result state: " << response.http_state << ", " << response.message << std::endl;
-					return response;
-				}
-			}
-		}
-	}
-	else {
-		response.message = "Failed to load libcurl handle!";
-		response.http_state = -1;
-	}
-	std::clog << "get_saved_items result state: " << response.http_state << ", " << response.message << std::endl;
-	return response;
+		return RedditGetRequest(endpoint, buffer);
 }
-State Saver::retrieve_comments(Item* i)
-{
-	std::clog << "retriving comments..." << std::endl;
-	CURLcode result;
-	CURL* handle;
-	std::string jresponse;
-	State response;
-	struct curl_slist* header = nullptr;
-
-	handle = curl_easy_init();
-
-	if (handle)
-	{
-		std::clog << "Setting up header and request." << std::endl;
-		std::string authorization_header = "Authorization: bearer ";
-		authorization_header += token;
-
-		header = curl_slist_append(header, authorization_header.c_str());
-
-		CURLcode gres = curl_global_init(CURL_GLOBAL_ALL);
-		if (gres != CURLE_OK) {
-			curl_easy_cleanup(handle);
-			response.message = curl_easy_strerror(gres);
-			response.http_state = -1;
-		}
-		else {
-			std::string url;
-			if(i->kind == "t3")
-				url = "https://oauth.reddit.com/r/" + i->subreddit + "/comments/" + i->id + "/?limit=500&showmore=true&depth=500";
-			else if(i->kind == "t1")
-				url = "https://oauth.reddit.com/r/" + i->subreddit + "/comments/" + i->id + "/?context=1000&depth=500";
-
-			std::clog << "URL: " << url << std::endl;
-
-			curl_easy_setopt(handle, CURLOPT_URL, url.c_str());
-			curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header);
-			curl_easy_setopt(handle, CURLOPT_USERAGENT, Account->user_agent.c_str());
-			curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
-			curl_easy_setopt(handle, CURLOPT_WRITEDATA, &jresponse);
-			curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, &writedat);
-
-			result = curl_easy_perform(handle);
-			curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &response.http_state);
-			curl_easy_cleanup(handle);
-			curl_global_cleanup();
-			curl_free(header);
-
-			tick();
-
-			if (result != CURLE_OK)
-			{
-				response.message = curl_easy_strerror(result);
-			}
-			else {
-				JQFIO(logpath + "/comments_" + i->id + ".json", jresponse);
-				std::clog << "Parsing comments... " << std::endl;
-				nlohmann::json root;
-
-				try {
-					root = nlohmann::json::parse(jresponse);
-					response.http_state = root.at("error").get<int>();
-					response.message = root.at("message").get<std::string>();
-					std::clog << "Item: " << response.http_state << ", " << response.message << std::endl;
-					return response;
-				}
-				catch (nlohmann::json::exception&) {
-
-					std::string id;
-					nlohmann::json comments, data;
-					try {
-						comments = root[1];
-						data = comments.at("data");
-
-						for (auto& melem : data.at("children"))
-						{
-							Comment* c = new Comment;
-							auto elem = melem.at("data");
-							i->kind = melem.at("kind").get<std::string>();
-							if( i->kind == "t1"){
-								// going to do something with this in the future
-
-								try {
-									c->author = elem.at("author").get<std::string>();
-								}
-								catch (nlohmann::json::out_of_range&) {
-									c->author = "[deleted]";
-								}
-								try {
-									std::string body = elem.at("body").get<std::string>();
-									boost::replace_all(body, ",", "&#x2c;");
-									boost::replace_all(body, "\"", "&#x22;");
-									boost::replace_all(body, "\n", "&#13;");
-									c->body = "\"" + body + "\"";
-								}
-								catch (nlohmann::json::out_of_range&) {
-									c->body = "[deleted]";
-								}
-								try {
-									c->created_utc = elem.at("created_utc").get<long>();
-								}
-								catch (nlohmann::json::out_of_range&) {
-									c->created_utc = elem.at("created").get<long>();
-								}
-
-								c->link_id = elem.at("link_id").get<std::string>();
-								c->parent_id = elem.at("parent_id").get<std::string>();
-								c->score = elem.at("score").get<int>();
-								c->stickied = elem.at("stickied").get<bool>();
-								c->subreddit_id = elem.at("subreddit_id").get<std::string>();
-
-								i->comments.push_back(c);
-							}
-						}
-					}
-					catch (nlohmann::json::out_of_range& e) {
-						std::cerr << e.what() << std::endl;
-						std::cerr << "Object ID: " << i->id << std::endl;
-
-						std::clog << e.what() << std::endl;
-						std::clog << "Object ID: " << i->id << std::endl;
-
-					}
-				}
-
-			}
-		}
-	}
-	else {
-		response.message = "Failed to load libcurl handle!";
-		response.http_state = -1;
-	}
-	std::clog << "get_saved_items result state: " << response.http_state << ", " << response.message << std::endl;
-	return response;
-
 
 
 void Saver::download_content(std::vector<Item*> i)
@@ -712,6 +420,145 @@ Saver::Saver() : RedditAccess(), IsLoggedIn(false)
 	}
 }
 
+bool Saver::ScanArgs(int argc, char* argv[])
+{
+	for(int i = 0; i < argc; i++)
+	{
+		const char* elem = argv[i];
+		switch(elem)
+		{
+			case "-i":
+				args.EnableImages = false;
+				break;
+			case "-t":
+				args.EnableText = false;
+				break;
+			case "-a":
+				if(i + 1 >= argc)
+				{
+					std::cout << "Error: Secondary argument for -a option not present" << std::endl;
+					return false;
+				}
+				args.username = argv[i + 1];
+				i++;
+				break;
+			case "-nc":
+				args.DisableComments = true;
+				break;
+			case "--help":
+			case "-h":
+				std::cout << "Flags:" << std::endl
+
+				<< "	-i: Disable images" << std::endl
+				<< "	-a [ACCOUNT] : Load specific account" << std::endl
+				<< "	-t : Disable text" << std::endl
+				<< "\t-b : Disable imgur albums" << std::endl
+				<< "\t-nv : Disable videos" << std::endl
+				<< "	-dc : Disable single comments" << std::endl
+				<< "	-ect : Enable the retrieval of comment threads" << std::endl
+				<< "	-l[limit] : Sets the limit of the number of comments, the default being 250 items" << std::endl
+				<< "	-rha : Enable reddit - html - archiver output" << std::endl
+				<< "	-v / --version : Get version" << std::endl
+				<< "	-whl / -whitelist[sub, sub] : whitelists a patricular sub or user with -whl" << std::endl
+				<< "	-bl / -blacklist[sub, sub] : blackists a paticular sub or user with -bl" << std::endl
+				<< "	-sb/ -sortby [subreddit,title,id or unsorted] : Arranges the media downloaded based on the selected sort" << std::endl
+				<< "	-r/-reverse reverses : the list of saved items" << std::endl
+				<< "	-uw [user,user] : Enable whitelisting users" << std::endl
+				<< "	-ub	[user,user] : Enable blacklisting of users" << std::endl
+				<< "\t-bd [domain,domain] : Enable blacklisting of domain names" << std::endl
+				<< "\t-bw [domain,domain] : Enable whitelisting of domain names" << std::endl
+				<< "	-vb : Enable output of more logs" << std::endl;
+				return false;
+				break;
+			case "-v":
+			case "--version":
+			#if defined(VERSION)
+						std::cout << VERSION << std::endl;
+			#else
+						std::cout << "No set version" << std::endl;
+			#endif
+						return false;
+					break;
+			case "-l":
+				if (i + 1 >= argc) {
+					std::cout << "Secondary argument for -l option not present" << std::endl;
+					return false;
+				}
+				args.limit = atoi(argv[i + 1]);
+				i++;
+				break;
+			case "--whitelist":
+			case "-wl":
+				if (i + 1 >= argc) {
+					std::cout << "Second argument for -whitelist/-whl options not present" << std::endl;
+					return false;
+				}
+				if (std::string comma_check = argv[i + 1]; comma_check.rfind(",") != std::string::npos) {
+
+					boost::split(args.whitelist, argv[i + 1], boost::is_any_of(","));
+				}
+				else {
+					args.whitelist.push_back(argv[i + 1]);
+				}
+				for (auto& elem : args.whitelist)
+					boost::algorithm::to_lower(elem);
+				i++;
+				break;
+			case "--blacklist":
+			case "-bl":
+				if (i + 1 >= argc) {
+					std::cout << "Second argument for -blacklist/-bl options not present" << std::endl;
+					return false;
+				}
+				if (std::string comma_check = argv[i + 1]; comma_check.rfind(",") != std::string::npos) {
+
+					boost::split(args.blacklist, argv[i + 1], boost::algorithm::is_any_of(","));
+				}
+				else {
+					args.blacklist.push_back(argv[i + 1]);
+				}
+				for (auto& elem : args.whitelist)
+					boost::algorithm::to_lower(elem);
+				i++;
+				break;
+			case "--sortby":
+			case "-sb":
+				if (i + 1 >= argc) {
+					std::cout << "Second argument for -sb/-sortby options not present" << std::endl;
+					return false;
+				}
+				std::string sort = argv[i + 1];
+				boost::algorithm::to_lower(sort);
+				if (sort == "subreddit" || sort == "sub")
+				{
+					args.sort = Subreddit;
+				}
+				else if (sort == "id") {
+					args.sort = ID;
+				}
+				else if (sort == "title") {
+					args.sort = Title;
+				}
+				else if(sort == "unsorted"){
+					args.sort = Unsorted;
+				}
+				else {
+					args.sort = Subreddit;
+				}
+				i++;
+				break;
+		case "-r":
+		case "--reverse":
+			args.reverse = true;
+			break;
+
+
+
+
+		}
+	}
+}
+
 bool Saver::scan_cmd(int argc, char* argv[])
 {
 	for (int i = 1; i < argc; i++)
@@ -944,7 +791,7 @@ State Saver::AccessPosts(std::vector< Item* >& saved)
 		is_mtime_up();
 		if (!is_time_up())
 		{
-			s = get_saved_items(saved, after);
+			s = RetrieveSaved(saved, after);
 		}
 		else {
 			State res = obtain_token(true);
@@ -953,7 +800,7 @@ State Saver::AccessPosts(std::vector< Item* >& saved)
 				return res;
 			}
 			else {
-				s = get_saved_items(saved, after);
+				s = RetrieveSaved(saved, after);
 			}
 		}
 		if(s.http_state != 200)
@@ -963,8 +810,13 @@ State Saver::AccessPosts(std::vector< Item* >& saved)
 	return s;
 }
 
-bool is_in_list(std::vector<std::string> lhs, std::string rhs)
+State Saver::Download(std::string URL, std::string& buffer, std::string& ContentType)
 {
-    std::vector<std::string>::iterator it = std::find(std::begin(lhs), std::end(lhs), rhs);
-    return (it != std::end(lhs));
+	State result;
+	RedditHandle.Setup(URL);
+	RedditHandle.WriteTo(buffer);
+	RedditHandle.GetInfo(CURLINFO_CONTENT_TYPE, ContentType.c_str());
+	result = RedditHandle.SendRequest();
+	RedditHandle.Cleanup();
+	return result;
 }

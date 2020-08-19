@@ -53,6 +53,7 @@ public:
 
 private:
 	CMDArgs args;
-	State get_saved_items(std::vector< Item* >& sitem, std::string after);
+	State RetrieveSaved(std::string& buffer, std::string after);
 	State retrieve_comments(Item* i);
+	State Download(std::string URL, std::string& buffer, std::string& ContentType);
 };

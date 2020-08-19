@@ -10,7 +10,7 @@ State RedditAccess::RedditGetRequest(std::string endpoint, std::string& buffer)
 {
 	State result;
 	std::string URL =
-		"https://oauth.reddit.com/user/"
+		"https://oauth.reddit.com/"
 		+ endpoint;
 	RedditHandle.Setup(URL);
 	RedditHandle.AddUserAgent(UserAccount.UserAgent);
