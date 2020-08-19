@@ -10,9 +10,9 @@ void BasicRequest::Setup(std::string URL, bool POST)
 		std::cerr << "Error, Failed to allocate cURL Handle" << std::endl;
 		abort();
 	}
-	SetAttribute(CURLOPT_URL, URL.c_str());
+	SetOpt(CURLOPT_URL, URL.c_str());
 	if (POST)
-		SetAttribute(CURLOPT_POST, 1L);
+		SetOpt(CURLOPT_POST, 1L);
 }
 
 State BasicRequest::SendRequest()
@@ -37,7 +37,7 @@ void BasicRequest::SetHeaders(std::string header)
 }
 
 template<typename Y>
-void BasicRequest::SetAttribute(CURLoption option, Y data)
+void BasicRequest::SetOpt(CURLoption option, Y data)
 {
 	assert(Handle != nullptr);
 	result = curl_easy_setopt(this->Handle, option, data);
@@ -48,25 +48,37 @@ void BasicRequest::SetAttribute(CURLoption option, Y data)
 	}
 }
 
+template<typename Y>
+void BasicRequest::GetInfo(CURLoption option, Y data)
+{
+	assert(Handle != nullptr);
+	result = curl_easy_getinfo(this->Handle, option, data);
+	if (result != CURLE_OK)
+	{
+		std::cerr << curl_easy_strerror(result) << std::endl;
+		abort();
+	}
+}
+
 void BasicRequest::WriteTo(std::string& buffer)
 {
-	SetAttribute(CURLOPT_WRITEFUNCTION, &writedat);
-	SetAttribute(CURLOPT_WRITEDATA, buffer);
+	SetOpt(CURLOPT_WRITEFUNCTION, &writedat);
+	SetOpt(CURLOPT_WRITEDATA, buffer);
 }
 
 void BasicRequest::AddParams(std::string params)
 {
-	SetAttribute(CURLOPT_POSTFIELDS, params.c_str());
+	SetOpt(CURLOPT_POSTFIELDS, params.c_str());
 }
 
 void BasicRequest::AddUserPWD(std::string usrpwd)
 {
-	SetAttribute(CURLOPT_USERPWD, usrpwd.c_str());
+	SetOpt(CURLOPT_USERPWD, usrpwd.c_str());
 }
 
 void BasicRequest::AddUserAgent(std::string useragent)
 {
-	SetAttribute(CURLOPT_USERAGENT, useragent.c_str());
+	SetOpt(CURLOPT_USERAGENT, useragent.c_str());
 }
 
 
@@ -75,7 +87,7 @@ State BasicRequest::Perform()
 	assert(Handle != nullptr);
 	State ReturnResult;
 	if (headers != nullptr)
-		SetAttribute(CURLOPT_HTTPHEADER, headers);
+		SetOpt(CURLOPT_HTTPHEADER, headers);
 	this->result = curl_easy_perform(Handle);
 
 	curl_easy_getinfo(Handle, CURLINFO_RESPONSE_CODE, &ReturnResult.http_state);
@@ -101,7 +113,7 @@ _BasicRequestRAII::_BasicRequestRAII()
 	if (Result != CURLE_OK)
 	{
 		std::cerr << "Error, failed to initalize cURL" << std::endl;
-		abort();
+		std::abort();
 	}
 }
 

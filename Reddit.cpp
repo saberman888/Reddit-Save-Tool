@@ -14,7 +14,7 @@ State RedditAccess::RedditGetRequest(std::string endpoint, std::string& buffer)
 		+ endpoint;
 	RedditHandle.Setup(URL);
 	RedditHandle.AddUserAgent(UserAccount.UserAgent);
-	RedditHandle.SetAttribute(CURLOPT_SSL_VERIFYPEER, 0L);
+	RedditHandle.SetOpt(CURLOPT_SSL_VERIFYPEER, 0L);
 	RedditHandle.WriteTo(buffer);
 	RedditHandle.SetHeaders("Authorization: bearer " + UserAccount.Token);
 	result = RedditHandle.SendRequest();
@@ -52,7 +52,7 @@ State RedditAccess::obtain_token()
 	std::string json;
 	State result;
 	RedditHandle.Setup("https://www.reddit.com/api/v1/access_token", true);
-	RedditHandle.SetAttribute(CURLOPT_SSL_VERIFYPEER, 1L);
+	RedditHandle.SetOpt(CURLOPT_SSL_VERIFYPEER, 1L);
 	RedditHandle.WriteTo(json);
 	RedditHandle.AddUserAgent(UserAccount.UserAgent);
 	RedditHandle.AddUserPWD(UserAccount.ClientId + ":" + UserAccount.Secret);

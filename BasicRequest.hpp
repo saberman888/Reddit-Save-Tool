@@ -30,7 +30,9 @@ public:
 	void Setup(std::string URL, bool POST = false);
 	void SetHeaders(std::string header);
 	template<typename Y>
-	void SetAttribute(CURLoption option, Y data);
+	void SetOpt(CURLoption option, Y data);
+	template<typename Y>
+	void GetInfo(CURLoption option, Y data);
 	void WriteTo(std::string& buffer);
 	void AddParams(std::string params);
 	void AddUserPWD(std::string usrpwd);
