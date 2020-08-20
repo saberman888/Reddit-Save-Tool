@@ -32,7 +32,7 @@ public:
 	template<typename Y>
 	void SetOpt(CURLoption option, Y data);
 	template<typename Y>
-	void GetInfo(CURINFO option, Y data);
+	void GetInfo(CURLINFO option, Y data);
 	void WriteTo(std::string& buffer);
 	void AddParams(std::string params);
 	void AddUserPWD(std::string usrpwd);
