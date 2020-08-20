@@ -12,7 +12,7 @@ public:
 	State GetImage(std::string ImageHash, std::string& buffer);
 	State GetAlbum(std::string AlbumHash, std::vector<std::string>& Images);
 	bool IsImage(std::string URL);
-	bool isAlbum(std::string URL);
+	bool IsAlbum(std::string URL);
 private:
 	std::string ClientId;
 	BasicRequest ImgurHandle;

@@ -70,6 +70,4 @@ public:
 	bool IsVideo();
 	// This function quickly checks if a url is an imaged based off the domain name and file extension if possible
 	bool IsImage();
-	bool IsImgurLink();
-	bool IsImgurAlbum();
 }Item;

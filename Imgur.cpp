@@ -29,7 +29,7 @@ bool ImgurAccess::IsImage(std::string URL)
 	return (URL.rfind("https://imgur.com/", 0) != std::string::npos);
 }
 
-bool ImgurAccess::isAlbum(std::string URL)
+bool ImgurAccess::IsAlbum(std::string URL)
 {
 	return (URL.rfind("https://imgur.com/a/", 0) != std::string::npos);
 }

@@ -45,17 +45,5 @@ bool Item::IsImage()
 	return false;
 }
 
-// IsImgurLink only deals with single images whereas IsImgurAlbum deals with albums
-
-bool Item::IsImgurAlbum()
-{
-	return url.rfind("https://imgur.com/a/", 0) != std::string::npos;
-}
-
-bool Item::IsImgurLink()
-{
-	return url.rfind("https://imgur.com/", 0) != std::string::npos;
-}
-
 
 CMDArgs::CMDArgs() : EnableImages(true), DisableComments(false), EnableText(true), RHA(false), limit(1000), username(""), sort(Subreddit), reverse(false), VideosEnabled(true), Verbose(false), EnableCommentThreads(false), EnableImgurAlbums(true){}
