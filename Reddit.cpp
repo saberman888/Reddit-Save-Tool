@@ -24,7 +24,6 @@ State RedditAccess::RedditGetRequest(std::string endpoint, std::string& buffer)
 std::string RedditAccess::ReadJson(std::string json)
 {
 
-	State result;
 	try {
 		nlohmann::json parse = nlohmann::json::parse(json);
 		if (parse.contains("access_token"))
@@ -43,6 +42,7 @@ std::string RedditAccess::ReadJson(std::string json)
 	}
 	catch (nlohmann::json::exception& e) {
 		std::cerr << "An error occured, " << e.what() << std::endl;
+		throw;
 	}
 }
 
