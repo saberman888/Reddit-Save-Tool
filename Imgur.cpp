@@ -1,163 +1,85 @@
 #include "Imgur.hpp"
 
-State ImgurAccess::retrieve_imgur_image(std::string imghash, std::string& URL)
+State ImgurAccess::GetImage(std::string Image, std::string& ReturnURL)
 {
-	CURL* handle;
-	CURLcode result;
-	State s;
-	std::string rdata, hd; // return rdata and header data, hd
+	std::string json;
 
-	handle = curl_easy_init();
-
-	if (handle)
+	State GetResult = ImgurGet(Image, json);
+	if (GetResult.http_state == 200)
 	{
-		curl_global_init(CURL_GLOBAL_ALL);
-		curl_slist* header = nullptr;
-		std::string sheader = "Authorization: Client-ID " + imgur_client_id;
-		header = curl_slist_append(header, sheader.c_str());
-		std::string _URL = "https://api.imgur.com/3/image/" + std::string(imghash);
-		curl_easy_setopt(handle, CURLOPT_URL, _URL.c_str());
-		curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header);
-		curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
-		curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
-		curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, &writedat);
-		curl_easy_setopt(handle, CURLOPT_WRITEDATA, &rdata);
-#ifdef _DEBUG
-		curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
-#endif
-		curl_easy_setopt(handle, CURLOPT_HEADERDATA, &hd);
-		result = curl_easy_perform(handle);
-
-		curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &s.http_state);
-		curl_global_cleanup();
-		curl_easy_cleanup(handle);
-		curl_free(header);
-
-		if (result != CURLE_OK)
-		{
-			s.message = curl_easy_strerror(result);
-		}
-		else {
-			nlohmann::json root;
-			try {
-				root = nlohmann::json::parse(rdata);
-
-				URL = root.at("data").at("link").get<std::string>();
-				s.http_state = root.at("status").get<int>();
-				s.message = "";
-			}
-			catch (nlohmann::json::exception& e) {
-				s.message = e.what();
-				s.http_state = root.at("status").get<int>();
-			}
-		}
-
+		ReturnURL = ParseImage(json);
 	}
-	else {
-		s.message = "Failed to load libcurl handle!";
-		s.http_state = -1;
-	}
-	return s;
+	return GetResult;
 }
 
-State ImgurAccess::retrieve_album_images(std::string albumhash, std::vector<std::string>& URLs)
+State ImgurAccess::GetAlbum(std::string Album, std::vector<std::string>& Images)
 {
-	State s;
-	CURL* handle;
-	CURLcode result;
-	std::string rdata, hd;
-
-	handle = curl_easy_init();
-
-	if (handle)
+	std::string endpoint = "/a/" + Album;
+	std::string json;
+	State GetResult = ImgurGet(endpoint, json);
+	if (GetResult.http_state == 200)
 	{
-		curl_global_init(CURL_GLOBAL_ALL);
-		struct curl_slist* header = nullptr;
-		std::string sheader = "Authorization: Client-ID " + this->imgur_client_id;
-		header = curl_slist_append(header, sheader.c_str());
-
-		std::string URL = "https://api.imgur.com/3/album/" + albumhash;
-		curl_easy_setopt(handle, CURLOPT_URL, URL.c_str());
-		curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header);
-		curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
-		curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
-		curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, &writedat);
-		curl_easy_setopt(handle, CURLOPT_WRITEDATA, &rdata);
-#ifdef _DEBUG
-		curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
-#endif
-		curl_easy_setopt(handle, CURLOPT_HEADERDATA, &hd);
-
-		result = curl_easy_perform(handle);
-		curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &s.http_state);
-		curl_easy_cleanup(handle);
-		curl_global_cleanup();
-		curl_slist_free_all(header);
-
-		if (result != CURLE_OK)
-		{
-			s.message = curl_easy_strerror(result);
-		}
-		else {
-			nlohmann::json root;
-			try {
-				root = nlohmann::json::parse(rdata);
-				nlohmann::json images = root.at("data").at("images");
-				for (auto& elem : images)
-				{
-					URLs.push_back(elem.at("link").get<std::string>());
-				}
-			}
-			catch (nlohmann::json::exception& e) {
-				s.message = e.what();
-				s.http_state = -1;
-				return s;
-			}
-			s.message = "";
-		}
+		Images = ParseAlbum(json);
 	}
-	else {
-		s.http_state = -1;
-		s.message = "Failed to initialize libcurl handle!";
-	}
-	return s;
+	return GetResult;
 }
 
-State ImgurAccess::download_item(const char* URL, std::string& buf)
+bool ImgurAccess::IsImage(std::string URL)
 {
+	return (URL.rfind("https://imgur.com/", 0) != std::string::npos);
+}
 
-	//std::cout << "Retrieving Imgur album" << std::endl;
-	CURL* handle;
-	CURLcode result;
-	State s;
-	std::string hd;
+bool ImgurAccess::isAlbum(std::string URL)
+{
+	return (URL.rfind("https://imgur.com/a/", 0) != std::string::npos);
+}
 
-	handle = curl_easy_init();
-	if (handle)
-	{
-		curl_global_init(CURL_GLOBAL_ALL);
-		curl_easy_setopt(handle, CURLOPT_URL, URL);
-		curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
-		curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, &writedat);
-		curl_easy_setopt(handle, CURLOPT_WRITEDATA, buf);
-		curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
-		curl_easy_setopt(handle, CURLOPT_HEADERDATA, &hd);
-#ifdef _DEBUG
-		curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
-#endif
+State ImgurAccess::ImgurGet(std::string endpoint, std::string& buffer)
+{
+	State result;
+	std::string URL = "https://api.imgur.com";
 
-		result = curl_easy_perform(handle);
-		curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &s.http_state);
-		curl_easy_cleanup(handle);
+	ImgurHandle.Setup(URL);
+	std::string ImgurHeader =
+		"Authorization: Client-ID "
+		+ ClientId;
 
-		if (result != CURLE_OK)
+	ImgurHandle.SetHeaders(ImgurHeader);
+	ImgurHandle.SetOpt(CURLOPT_FOLLOWLOCATION, 1L);
+	ImgurHandle.SetOpt(CURLOPT_SSL_VERIFYPEER, 0L);
+	ImgurHandle.WriteTo(buffer);
+	result = ImgurHandle.SendRequest();
+	return result;
+}
+
+
+std::string ImgurAccess::ParseImage(std::string json)
+{
+	try {
+		nlohmann::json root = nlohmann::json::parse(json);
+		if (root.contains("data"))
 		{
-			s.message = curl_easy_strerror(result);
+			return root.at("data").at("link").get <std::string>();
 		}
 	}
-	else {
-		s.http_state = -1;
-		s.message = "Failed to initialize libcurl handle!";
+	catch (nlohmann::json::out_of_range& e) {
+		throw;
 	}
-	return s;
 }
+std::vector<std::string> ImgurAccess::ParseAlbum(std::string json)
+{
+	std::vector<std::string> URLs;
+	try {
+		nlohmann::json root = nlohmann::json::parse(json);
+		nlohmann::json images = root.at("data").at("images");
+		for (auto& elem : images)
+		{
+			URLs.push_back(elem.at("link").get<std::string>());
+		}
+	}
+	catch (nlohmann::json::exception& e) {
+		throw;
+	}
+}
+
+

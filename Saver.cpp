@@ -214,7 +214,7 @@ void Saver::download_content(std::vector<Item*> i)
 
 			std::string hash = vih[4];
 
-			State iam = retrieve_album_images(hash,vai);
+			State iam = RetrieveAlbum(hash,vai);
 			if(iam.http_state != 200)
 			{
 				std::cout << "Error: Failed to retrieve Imgur album URLs, " << iam.message << std::endl;
@@ -259,7 +259,7 @@ void Saver::download_content(std::vector<Item*> i)
 			std::cout << "Imgur hash: " << surl[3] << std::endl;
 			#endif
 
-			State res = retrieve_imgur_image(surl[3], url);
+			State res = RetrieveImage(surl[3], url);
 			if(res.http_state != 200)
 			{
 				std::cout << "Error failed to retrieve imgur image!" << std::endl;
@@ -413,7 +413,7 @@ Saver::Saver() : RedditAccess(), IsLoggedIn(false)
 	if (IsUnixBased)
 	{
 		// TODO: Give an option to store in anywhere other than the home directory
-		MediaPath = std::string(getenv("HOME")) + "/Reddit/";
+		MediaPath = std::string(getenv("HOME")) + "/Reddit/" + UserAccount.Username;
 	}
 	else {
 		MediaPath = std::string::empty;
