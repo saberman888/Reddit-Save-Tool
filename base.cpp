@@ -31,19 +31,5 @@ std::string to_realtime(long timestamp)
 	return std::string(str);
 }
 
-bool Item::IsVideo()
-{
-	return (is_video || domain.rfind("https://v.redd.it", 0) != std::string::npos);
-}
-
-bool Item::IsImage()
-{
-	std::vector<std::string> urlsnext = { "i.imgur.com", "i.redd.it", ".jpeg", ".bmp", ".png", ".gif", ".jpg", ".tiff", ".webp" };
-	for (std::string elem : urlsnext)
-		if (url.rfind(elem) != std::string::npos)
-			return true;
-	return false;
-}
-
 
 CMDArgs::CMDArgs() : EnableImages(true), DisableComments(false), EnableText(true), RHA(false), limit(1000), username(""), sort(Subreddit), reverse(false), VideosEnabled(true), Verbose(false), EnableCommentThreads(false), EnableImgurAlbums(true){}

@@ -37,23 +37,27 @@ constexpr bool IsUnixBased = true;
 constexpr bool IsUnixBased = false;
 #endif
 
-
+using Json = nlohmann::json;
 class Saver : public RedditAccess
 {
 public:
 	Saver();
 	bool LoadLogins();
-	bool IsLoggedIn;
-	fs::path MediaPath;
 	bool scan_cmd(int argc, char* argv[]);
-	State RetrieveComments(Item *i);
-	State AccessPosts(std::vector<Item*>& saved);
-	void WriteLinkCSV(std::vector<Item*> src) { write_links(src); }
-	void download_content(std::vector<Item*> i);
 
-private:
+	bool IsLoggedIn;
+	std::string after;
+	fs::path MediaPath;
 	CMDArgs args;
+
+	// 1000 is the max number of elements I can pull from a user's saved
+	std::vector<Json> content;
+
+	bool IsAVideo(Json Post);
+	bool IsImage(std::string link);
+
 	State RetrieveSaved(std::string& buffer, std::string after);
-	State retrieve_comments(Item* i);
+	void ParseSaved(std::string json);
+
 	State Download(std::string URL, std::string& buffer, std::string& ContentType);
 };
