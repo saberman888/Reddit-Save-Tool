@@ -10,15 +10,19 @@ bool Saver::LoadLogins()
 	{
 		// If the config file containing accounts is not present, then write one with dummy values so the end user can fill it in
 		input.open("settings.json", std::ios::out);
-		nlohmann::json settingsfilling =
-		{
-			{"accounts", {"client_id", "CLIENT_ID_HERE"},
+		nlohmann::json settingsfilling ={
+			{"imgur_client_id", "IMGUR_CLIENT_ID_HERE"}
+		};
+		settingsfilling["accounts"] = Json::array();
+
+		Json account = {
+			{"client_id", "CLIENT_ID_HERE"},
 			{"secret", "SECRET_HERE"},
 			{"username", "USERNAME_HERE"},
 			{"password", "PASSWORD_HERE"},
-			{"useragent", "USERAGENT_HERE"}},
-			{"imgur_client_id", "IMGUR_CLIENT_ID_HERE"}
-		};
+			{"useragent", "USERAGENT_HERE"}};
+
+			settingsfilling["acounts"].push_back(account);
 
 		input << settingsfilling.dump(4);
 		return success;
@@ -63,10 +67,10 @@ Saver::Saver() : RedditAccess(), IsLoggedIn(false)
 	if (IsUnixBased)
 	{
 		// TODO: Give an option to store in anywhere other than the home directory
-		MediaPath = std::string(getenv("HOME")) + "/Reddit/" + UserAccount.Username;
+		//MediaPath = std::string(getenv("HOME")) + "/Reddit/" + UserAccount.Username;
 	}
 	else {
-		MediaPath = std::string::empty;
+		MediaPath = std::string();
 	}
 }
 
@@ -143,13 +147,14 @@ bool Saver::scan_cmd(int argc, char* argv[])
 			}
 			if (std::string comma_check = argv[i + 1]; comma_check.rfind(",") != std::string::npos) {
 
-				boost::split(args.whitelist, argv[i + 1], boost::is_any_of(","));
+				//boost::split(args.whitelist, argv[i + 1], boost::is_any_of(","));
+				args.whitelist = splitString(std::string(argv[i + 1]),',');
 			}
 			else {
 				args.whitelist.push_back(argv[i + 1]);
 			}
 			for (auto& elem : args.whitelist)
-				boost::algorithm::to_lower(elem);
+				elem = ToLower(elem);
 			i++;
 		}
 		else if (arg == "-blacklist" || arg == "-bl") {
@@ -159,13 +164,14 @@ bool Saver::scan_cmd(int argc, char* argv[])
 			}
 			if (std::string comma_check = argv[i + 1]; comma_check.rfind(",") != std::string::npos) {
 
-				boost::split(args.blacklist, argv[i + 1], boost::algorithm::is_any_of(","));
+				//boost::split(args.blacklist, argv[i + 1], boost::algorithm::is_any_of(","));
+				args.blacklist = splitString(std::string(argv[i + 1]), ',');
 			}
 			else {
 				args.blacklist.push_back(argv[i + 1]);
 			}
 			for (auto& elem : args.whitelist)
-				boost::algorithm::to_lower(elem);
+				elem = ToLower(elem);
 			i++;
 		}
 		else if (arg == "-sb" || arg == "-sortby")
@@ -174,8 +180,7 @@ bool Saver::scan_cmd(int argc, char* argv[])
 				std::cout << "Second argument for -sb/-sortby options not present" << std::endl;
 				return false;
 			}
-			std::string sort = argv[i + 1];
-			boost::algorithm::to_lower(sort);
+			std::string sort = ToLower(std::string(argv[i + 1]));
 			if (sort == "subreddit" || sort == "sub")
 			{
 				args.sort = Subreddit;
@@ -204,13 +209,13 @@ bool Saver::scan_cmd(int argc, char* argv[])
 			}
 			if (std::string comma_check = argv[i + 1]; comma_check.rfind(",") != std::string::npos) {
 
-				boost::split(args.ublacklist, argv[i + 1], boost::algorithm::is_any_of(","));
+				//boost::split(args.ublacklist, argv[i + 1], boost::algorithm::is_any_of(","));
 			}
 			else {
 				args.ublacklist.push_back(argv[i + 1]);
 			}
 			for (auto& elem : args.ublacklist)
-				boost::algorithm::to_lower(elem);
+				//boost::algorithm::to_lower(elem);
 			i++;
 		} else if(arg == "-uw") {
 			if (i + 1 >= argc) {
@@ -219,13 +224,13 @@ bool Saver::scan_cmd(int argc, char* argv[])
 			}
 			if (std::string comma_check = argv[i + 1]; comma_check.rfind(",") != std::string::npos) {
 
-				boost::split(args.uwhitelist, argv[i + 1], boost::algorithm::is_any_of(","));
+				//boost::split(args.uwhitelist, argv[i + 1], boost::algorithm::is_any_of(","));
 			}
 			else {
 				args.uwhitelist.push_back(argv[i + 1]);
 			}
 			for (auto& elem : args.uwhitelist)
-				boost::algorithm::to_lower(elem);
+				//boost::algorithm::to_lower(elem);
 			i++;
 		}
 		else if(arg == "-bd") {
@@ -235,13 +240,13 @@ bool Saver::scan_cmd(int argc, char* argv[])
 			}
 			if (std::string comma_check = argv[i + 1]; comma_check.rfind(",") != std::string::npos) {
 
-				boost::split(args.dblacklist, argv[i + 1], boost::algorithm::is_any_of(","));
+				//boost::split(args.dblacklist, argv[i + 1], boost::algorithm::is_any_of(","));
 			}
 			else {
 				args.dblacklist.push_back(argv[i + 1]);
 			}
 			for (auto& elem : args.ublacklist)
-				boost::algorithm::to_lower(elem);
+				//boost::algorithm::to_lower(elem);
 			i++;
 		} else if(arg == "-wd") {
 			if (i + 1 >= argc) {
@@ -250,13 +255,13 @@ bool Saver::scan_cmd(int argc, char* argv[])
 			}
 			if (std::string comma_check = argv[i + 1]; comma_check.rfind(",") != std::string::npos) {
 
-				boost::split(args.dwhitelist, argv[i + 1], boost::algorithm::is_any_of(","));
+				//boost::split(args.dwhitelist, argv[i + 1], boost::algorithm::is_any_of(","));
 			}
 			else {
 				args.dwhitelist.push_back(argv[i + 1]);
 			}
 			for (auto& elem : args.dwhitelist)
-				boost::algorithm::to_lower(elem);
+				//boost::algorithm::to_lower(elem);
 			i++;
 		} else if(arg == "-vb") {
 			args.Verbose = true;
@@ -282,7 +287,6 @@ State Saver::Download(std::string URL, std::string& buffer, std::string& Content
 	State result;
 	RedditHandle.Setup(URL);
 	RedditHandle.WriteTo(buffer);
-	RedditHandle.GetInfo(CURLINFO_CONTENT_TYPE, ContentType.c_str());
 	result = RedditHandle.SendRequest();
 	RedditHandle.Cleanup();
 	return result;

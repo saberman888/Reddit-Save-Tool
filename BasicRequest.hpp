@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include "curl/curl.h"
@@ -20,13 +21,13 @@ typedef struct _BasicRequestRAII
 }BasicRequestRAII;
 
 /*
-	Pretty basic cURL wrapper made to do once request at a time, which is ideal for this project
+	Pretty basic cURL wrapper made to do one request at a time, which is ideal for this project
 */
 
 class BasicRequest
 {
 public:
-	BasicRequest() : headers(nullptr), Handle(nullptr) {}
+	BasicRequest() : Handle(nullptr), result(CURLE_OK), headers(nullptr)  {}
 	void Setup(std::string URL, bool POST = false);
 	void SetHeaders(std::string header);
 	template<typename Y>

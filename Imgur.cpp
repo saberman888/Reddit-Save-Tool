@@ -55,16 +55,18 @@ State ImgurAccess::ImgurGet(std::string endpoint, std::string& buffer)
 
 std::string ImgurAccess::ParseImage(std::string json)
 {
+	std::string data;
 	try {
 		nlohmann::json root = nlohmann::json::parse(json);
 		if (root.contains("data"))
 		{
-			return root.at("data").at("link").get <std::string>();
+			data = root.at("data").at("link").get <std::string>();
 		}
 	}
 	catch (nlohmann::json::out_of_range& e) {
 		throw;
 	}
+	return data;
 }
 std::vector<std::string> ImgurAccess::ParseAlbum(std::string json)
 {
@@ -80,6 +82,5 @@ std::vector<std::string> ImgurAccess::ParseAlbum(std::string json)
 	catch (nlohmann::json::exception& e) {
 		throw;
 	}
+	return URLs;
 }
-
-

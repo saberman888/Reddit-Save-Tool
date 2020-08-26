@@ -16,20 +16,10 @@
 #include "curl/curl.h"
 #include "base.hpp"
 #include "Reddit.hpp"
-
-#if defined(__cpp_lib_filesystem)
+#include "BasicRequest.hpp"
 #include <filesystem>
-namespace fs = std::filesystem;
-#elif defined(__cpp_lib_experimental_filesystem)
-#include <experimental/filesystem>
-namespace fs = std::experimental::filesystem;
-#elif defined(USE_EXP_FS)
-#include <experimental/filesystem>
-namespace fs = std::experimental::filesystem;
-#else
-#error "No filesystem support found :("
-#endif
 
+namespace fs = std::filesystem;
 
 #if defined(unix) || defined(_unix)
 constexpr bool IsUnixBased = true;

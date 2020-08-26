@@ -3,14 +3,14 @@
 std::string stripfname(std::string src)
 {
 	std::string characters[] = { "/", "\\", "?", "%", "*", ":", "|", "\"", "<", ">", ".", "\'", "&", ",", "(", ")","#",";"};
-	for (std::string elem : characters)
+	std::string temp;
+	for(char chara : src)
 	{
-		src.erase(
-			std::remove(src.begin(), src.end(), elem),
-			src.end()
-		);
+		if(std::string(1,chara) == temp)
+			continue;
+		temp += chara;
 	}
-	return src;
+	return temp;
 }
 
 
@@ -29,6 +29,25 @@ std::string to_realtime(long timestamp)
 #endif
 
 	return std::string(str);
+}
+
+std::vector<std::string> splitString(std::string src, char delim)
+{
+	std::vector<std::string> words;
+	std::stringstream ss(src);
+	std::string temp;
+	while (std::getline(ss, temp, delim))
+	{
+		words.push_back(temp);
+	}
+	return words;
+}
+
+std::string ToLower(std::string data)
+{
+	std::transform(data.begin(), data.end(), data.begin(),
+		[](unsigned char c) { return std::tolower(c); });
+		return data;
 }
 
 

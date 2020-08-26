@@ -28,6 +28,7 @@ void BasicRequest::Cleanup()
 
 	// re-assign to nullptr
 	headers = nullptr;
+	Handle = nullptr;
 }
 
 void BasicRequest::SetHeaders(std::string header)
@@ -62,7 +63,7 @@ void BasicRequest::GetInfo(CURLINFO option, Y data)
 
 void BasicRequest::WriteTo(std::string& buffer)
 {
-	SetOpt(CURLOPT_WRITEFUNCTION, &writedat);
+	SetOpt(CURLOPT_WRITEFUNCTION, &BasicRequest::writedat);
 	SetOpt(CURLOPT_WRITEDATA, buffer);
 }
 
