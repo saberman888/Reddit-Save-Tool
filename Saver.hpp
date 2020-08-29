@@ -47,8 +47,8 @@ public:
 	bool IsAVideo(Json Post);
 	bool IsImage(std::string link);
 
-	void RetrieveSaved(std::string after);
-	void ParseSaved(std::string json);
+	void RetrieveSaved();
+	void ParseSaved();
 
 	void Download(std::string URL);
 };

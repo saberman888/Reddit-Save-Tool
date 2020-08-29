@@ -62,20 +62,24 @@ bool Saver::LoadLogins()
 }
 
 
-void Saver::RetrieveSaved(std::string after)
+void Saver::RetrieveSaved()
 {
 		std::string endpoint = UserAccount.Username
 		+ "/saved/?limit="
 		+ std::to_string(100);
-
+		if (after != "")
+		{
+			endpoint +=
+				"&after=" + after;
+		}
 		RedditGetRequest(endpoint);
 }
 
 
-void Saver::ParseSaved(std::string json)
+void Saver::ParseSaved()
 {
 	try {
-		 	nlohmann::json root = nlohmann::json::parse(json);
+		 	nlohmann::json root = nlohmann::json::parse(response.buffer);
 			// See if there is any after tag
 			if (root.contains("after"))
 			{
@@ -92,16 +96,17 @@ void Saver::ParseSaved(std::string json)
 	}
 }
 
-Saver::Saver() : RedditAccess(), IsLoggedIn(false), imgur(nullptr)
+Saver::Saver() : RedditAccess(), IsLoggedIn(false), after(), imgur(nullptr)
 {
 	after = std::string();
 	if (IsUnixBased)
 	{
 		// TODO: Give an option to store in anywhere other than the home directory
 		//MediaPath = std::string(getenv("HOME")) + "/Reddit/" + UserAccount.Username;
+		MediaPath = "./images/";
 	}
 	else {
-		MediaPath = std::string();
+		MediaPath = "./images/";
 	}
 }
 
