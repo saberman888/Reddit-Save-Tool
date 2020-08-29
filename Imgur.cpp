@@ -1,27 +1,23 @@
 #include "Imgur.hpp"
 
-State ImgurAccess::GetImage(std::string Image, std::string& ReturnURL)
+void ImgurAccess::GetImage(std::string Image, std::string& ReturnURL)
 {
 	std::string json;
-
-	State GetResult = ImgurGet(Image, json);
-	if (GetResult.http_state == 200)
+	ImgurGet(Image);
+	if (response.HttpState == 200)
 	{
-		ReturnURL = ParseImage(json);
+		ReturnURL = ParseImage(response.buffer);
 	}
-	return GetResult;
 }
 
-State ImgurAccess::GetAlbum(std::string Album, std::vector<std::string>& Images)
+void ImgurAccess::GetAlbum(std::string Album, std::vector<std::string>& Images)
 {
 	std::string endpoint = "/a/" + Album;
-	std::string json;
-	State GetResult = ImgurGet(endpoint, json);
-	if (GetResult.http_state == 200)
+	ImgurGet(endpoint);
+	if (response.HttpState == 200)
 	{
-		Images = ParseAlbum(json);
+		Images = ParseAlbum(response.buffer);
 	}
-	return GetResult;
 }
 
 bool ImgurAccess::IsImage(std::string URL)
@@ -34,12 +30,11 @@ bool ImgurAccess::IsAlbum(std::string URL)
 	return (URL.rfind("https://imgur.com/a/", 0) != std::string::npos);
 }
 
-State ImgurAccess::ImgurGet(std::string endpoint, std::string& buffer)
+void ImgurAccess::ImgurGet(std::string endpoint)
 {
-	State result;
 	std::string URL = "https://api.imgur.com";
 
-	ImgurHandle.Setup(URL);
+	ImgurHandle.Setup(URL, &response);
 	std::string ImgurHeader =
 		"Authorization: Client-ID "
 		+ ClientId;
@@ -47,9 +42,8 @@ State ImgurAccess::ImgurGet(std::string endpoint, std::string& buffer)
 	ImgurHandle.SetHeaders(ImgurHeader);
 	ImgurHandle.SetOpt(CURLOPT_FOLLOWLOCATION, 1L);
 	ImgurHandle.SetOpt(CURLOPT_SSL_VERIFYPEER, 0L);
-	ImgurHandle.WriteTo(buffer);
-	result = ImgurHandle.SendRequest();
-	return result;
+	ImgurHandle.SendRequest();
+	ImgurHandle.Cleanup();
 }
 
 
@@ -63,7 +57,7 @@ std::string ImgurAccess::ParseImage(std::string json)
 			data = root.at("data").at("link").get <std::string>();
 		}
 	}
-	catch (nlohmann::json::out_of_range& e) {
+	catch (nlohmann::json::out_of_range&) {
 		throw;
 	}
 	return data;
@@ -79,7 +73,7 @@ std::vector<std::string> ImgurAccess::ParseAlbum(std::string json)
 			URLs.push_back(elem.at("link").get<std::string>());
 		}
 	}
-	catch (nlohmann::json::exception& e) {
+	catch (nlohmann::json::exception&) {
 		throw;
 	}
 	return URLs;

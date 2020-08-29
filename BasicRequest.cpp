@@ -2,7 +2,7 @@
 #include <iostream>
 
 
-void BasicRequest::Setup(std::string URL, bool POST)
+void BasicRequest::Setup(std::string URL, State* dest, bool POST)
 {
 	Handle = curl_easy_init();
 	if (!Handle)
@@ -10,12 +10,15 @@ void BasicRequest::Setup(std::string URL, bool POST)
 		std::cerr << "Error, Failed to allocate cURL Handle" << std::endl;
 		abort();
 	}
+	this->dest = dest;
+	WriteToState();
 	SetOpt(CURLOPT_URL, URL.c_str());
+	WriteToState();
 	if (POST)
 		SetOpt(CURLOPT_POST, 1L);
 }
 
-State BasicRequest::SendRequest()
+void BasicRequest::SendRequest()
 {
 	return Perform();
 }
@@ -50,7 +53,7 @@ void BasicRequest::SetOpt(CURLoption option, Y data)
 }
 
 template<typename Y>
-void BasicRequest::GetInfo(CURLINFO option, Y data)
+void BasicRequest::GetInfo(CURLINFO option, Y* data)
 {
 	assert(Handle != nullptr);
 	result = curl_easy_getinfo(this->Handle, option, data);
@@ -61,10 +64,12 @@ void BasicRequest::GetInfo(CURLINFO option, Y data)
 	}
 }
 
-void BasicRequest::WriteTo(std::string& buffer)
+void BasicRequest::WriteToState()
 {
 	SetOpt(CURLOPT_WRITEFUNCTION, &BasicRequest::writedat);
-	SetOpt(CURLOPT_WRITEDATA, buffer);
+	SetOpt(CURLOPT_WRITEDATA, &dest->buffer);
+	GetInfo(CURLINFO_RESPONSE_CODE, &dest->HttpState);
+	GetInfo(CURLINFO_CONTENT_TYPE, &dest->buffer);
 }
 
 void BasicRequest::AddParams(std::string params)
@@ -83,7 +88,7 @@ void BasicRequest::AddUserAgent(std::string useragent)
 }
 
 
-State BasicRequest::Perform()
+void BasicRequest::Perform()
 {
 	assert(Handle != nullptr);
 	State ReturnResult;
@@ -91,20 +96,17 @@ State BasicRequest::Perform()
 		SetOpt(CURLOPT_HTTPHEADER, headers);
 	this->result = curl_easy_perform(Handle);
 
-	curl_easy_getinfo(Handle, CURLINFO_RESPONSE_CODE, &ReturnResult.http_state);
 	if (result != CURLE_OK) {
-		ReturnResult.message = curl_easy_strerror(result);
+		ReturnResult.Message = curl_easy_strerror(result);
 		std::cerr << curl_easy_strerror(result) << std::endl;
 	}
-	return ReturnResult;
 }
 
-size_t BasicRequest::writedat(char* buffer, size_t size, size_t nmemb, std::string& src)
+size_t BasicRequest::writedat(char* buffer, size_t size, size_t nmemb, std::string& dest)
 {
-	for (size_t i = 0; i < size * nmemb; i++)
-	{
-		src.push_back(buffer[i]);
-	}
+	// remove any existing data from dest
+	dest.clear();
+	dest.push_back(*buffer);
 	return size * nmemb;
 }
 

@@ -32,6 +32,7 @@ class Saver : public RedditAccess
 {
 public:
 	Saver();
+	~Saver() { delete imgur; }
 	bool LoadLogins();
 	bool scan_cmd(int argc, char* argv[]);
 
@@ -39,15 +40,15 @@ public:
 	std::string after;
 	fs::path MediaPath;
 	CMDArgs args;
-
+	ImgurAccess* imgur;
 	// 1000 is the max number of elements I can pull from a user's saved
 	std::vector<Json> content;
 
 	bool IsAVideo(Json Post);
 	bool IsImage(std::string link);
 
-	State RetrieveSaved(std::string& buffer, std::string after);
+	void RetrieveSaved(std::string after);
 	void ParseSaved(std::string json);
 
-	State Download(std::string URL, std::string& buffer, std::string& ContentType);
+	void Download(std::string URL);
 };

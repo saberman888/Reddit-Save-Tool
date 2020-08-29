@@ -1,24 +1,17 @@
 #include "Reddit.hpp"
 #include <iostream>
 
-RedditAccess::RedditAccess()
-{
-}
 
-
-State RedditAccess::RedditGetRequest(std::string endpoint, std::string& buffer)
+void RedditAccess::RedditGetRequest(std::string endpoint)
 {
-	State result;
 	std::string URL =
 		"https://oauth.reddit.com/"
 		+ endpoint;
-	RedditHandle.Setup(URL);
+	RedditHandle.Setup(URL, &response);
 	RedditHandle.AddUserAgent(UserAccount.UserAgent);
 	RedditHandle.SetOpt(CURLOPT_SSL_VERIFYPEER, 0L);
-	RedditHandle.WriteTo(buffer);
 	RedditHandle.SetHeaders("Authorization: bearer " + UserAccount.Token);
-	result = RedditHandle.SendRequest();
-	return result;
+	RedditHandle.SendRequest();
 }
 
 std::string RedditAccess::ReadJson(std::string json)
@@ -47,13 +40,10 @@ std::string RedditAccess::ReadJson(std::string json)
 }
 
 
-State RedditAccess::obtain_token()
+void RedditAccess::AccessToken()
 {
-	std::string json;
-	State result;
-	RedditHandle.Setup("https://www.reddit.com/api/v1/access_token", true);
+	RedditHandle.Setup("https://www.reddit.com/api/v1/access_token", &response, true);
 	RedditHandle.SetOpt(CURLOPT_SSL_VERIFYPEER, 1L);
-	RedditHandle.WriteTo(json);
 	RedditHandle.AddUserAgent(UserAccount.UserAgent);
 	RedditHandle.AddUserPWD(UserAccount.ClientId + ":" + UserAccount.Secret);
 	std::string postfields =
@@ -63,8 +53,7 @@ State RedditAccess::obtain_token()
 		+ UserAccount.Password
 		+ "&scope=%20save%20read%20history";
 	RedditHandle.AddParams(postfields);
-	result = RedditHandle.SendRequest();
-	result.message = ReadJson(json);
+	RedditHandle.SendRequest();
 	RedditHandle.Cleanup();
-	return result;
+	response.Message = ReadJson(response.buffer);
 }

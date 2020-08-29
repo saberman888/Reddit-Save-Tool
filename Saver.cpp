@@ -13,7 +13,6 @@ bool Saver::LoadLogins()
 		nlohmann::json settingsfilling ={
 			{"imgur_client_id", "IMGUR_CLIENT_ID_HERE"}
 		};
-		settingsfilling["accounts"] = Json::array();
 
 		Json account = {
 			{"client_id", "CLIENT_ID_HERE"},
@@ -27,17 +26,49 @@ bool Saver::LoadLogins()
 		input << settingsfilling.dump(4);
 		return success;
 	}
+	else {
+		// Read json from the file
+		Json root;
+		input >> root;
+
+		// See how many accounts are present
+		// If there are more than one, continue and scan for the requested account or the first one
+		// depending on the option used in args
+		if (root.at("accounts").size() > 0)
+		{
+			for (auto& elem : root.at("accounts"))
+			{
+				if (std::string username = elem.at("username").get<std::string>(); args.username == username)
+				{
+					UserAccount.Username = username;
+					UserAccount.Password = elem.at("password").get<std::string>();
+					UserAccount.ClientId = elem.at("client_id").get<std::string>();
+					UserAccount.Secret = elem.at("secret").get<std::string>();
+					UserAccount.UserAgent = elem.at("useragent").get<std::string>();
+					break;
+				}
+			}
+
+			// Check if a Imgur Client ID is present
+			if (root.contains("imgur_client_id"))
+			{
+				// if it is, allocate a new instance of imgur and initialize it with the client id
+				imgur = new ImgurAccess(root.at("imgur_client_id").get<std::string>());
+			}
+			success = true;
+		}
+	}
 	return success;
 }
 
 
-State Saver::RetrieveSaved(std::string& buffer, std::string after)
+void Saver::RetrieveSaved(std::string after)
 {
 		std::string endpoint = UserAccount.Username
 		+ "/saved/?limit="
 		+ std::to_string(100);
 
-		return RedditGetRequest(endpoint, buffer);
+		RedditGetRequest(endpoint);
 }
 
 
@@ -61,7 +92,7 @@ void Saver::ParseSaved(std::string json)
 	}
 }
 
-Saver::Saver() : RedditAccess(), IsLoggedIn(false)
+Saver::Saver() : RedditAccess(), IsLoggedIn(false), imgur(nullptr)
 {
 	after = std::string();
 	if (IsUnixBased)
@@ -282,14 +313,11 @@ bool Saver::scan_cmd(int argc, char* argv[])
 }
 
 
-State Saver::Download(std::string URL, std::string& buffer, std::string& ContentType)
+void Saver::Download(std::string URL)
 {
-	State result;
-	RedditHandle.Setup(URL);
-	RedditHandle.WriteTo(buffer);
-	result = RedditHandle.SendRequest();
+	RedditHandle.Setup(URL, &response);
+	RedditHandle.SendRequest();
 	RedditHandle.Cleanup();
-	return result;
 }
 
 
