@@ -9,8 +9,8 @@ class ImgurAccess
 {
 public:
 	ImgurAccess(std::string ClientId) : ClientId(ClientId) {}
-	void GetImage(std::string ImageHash, std::string& buffer);
-	void GetAlbum(std::string AlbumHash, std::vector<std::string>& Images);
+	std::string GetImage(std::string ImageHash);
+	std::vector<std::string> GetAlbum(std::string AlbumHash);
 	bool IsImage(std::string URL);
 	bool IsAlbum(std::string URL);
 	State response;

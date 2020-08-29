@@ -36,3 +36,6 @@ tests/*
 out/*
 ./CMakeFiles
 ./bin
+/vsbuild/Reddit-Save-Tool
+/CMakeFiles
+/bin/debug

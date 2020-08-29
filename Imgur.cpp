@@ -1,23 +1,25 @@
 #include "Imgur.hpp"
 
-void ImgurAccess::GetImage(std::string Image, std::string& ReturnURL)
+std::string ImgurAccess::GetImage(std::string ImageHash)
 {
 	std::string json;
-	ImgurGet(Image);
+	ImgurGet(ImageHash);
 	if (response.HttpState == 200)
 	{
-		ReturnURL = ParseImage(response.buffer);
+		return ParseImage(response.buffer);
 	}
 }
 
-void ImgurAccess::GetAlbum(std::string Album, std::vector<std::string>& Images)
+std::vector<std::string> ImgurAccess::GetAlbum(std::string Album)
 {
 	std::string endpoint = "/a/" + Album;
+	std::vector<std::string> Images;
 	ImgurGet(endpoint);
 	if (response.HttpState == 200)
 	{
 		Images = ParseAlbum(response.buffer);
 	}
+	return Images;
 }
 
 bool ImgurAccess::IsImage(std::string URL)
