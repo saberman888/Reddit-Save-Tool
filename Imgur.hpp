@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-class ImgurAccess
+class ImgurAccess : public BasicRequest
 {
 public:
 	ImgurAccess(std::string ClientId) : ClientId(ClientId) {}
@@ -13,10 +13,8 @@ public:
 	std::vector<std::string> GetAlbum(std::string AlbumHash);
 	bool IsImage(std::string URL);
 	bool IsAlbum(std::string URL);
-	State response;
 private:
 	std::string ClientId;
-	BasicRequest ImgurHandle;
 	void ImgurGet(std::string URL);
 
 	std::string ParseImage(std::string json);

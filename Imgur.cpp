@@ -4,10 +4,11 @@ std::string ImgurAccess::GetImage(std::string ImageHash)
 {
 	std::string json;
 	ImgurGet(ImageHash);
-	if (response.HttpState == 200)
+	if (Response.HttpState == 200)
 	{
-		return ParseImage(response.buffer);
+		return ParseImage(Response.buffer);
 	}
+	return std::string();
 }
 
 std::vector<std::string> ImgurAccess::GetAlbum(std::string Album)
@@ -15,9 +16,9 @@ std::vector<std::string> ImgurAccess::GetAlbum(std::string Album)
 	std::string endpoint = "/a/" + Album;
 	std::vector<std::string> Images;
 	ImgurGet(endpoint);
-	if (response.HttpState == 200)
+	if (Response.HttpState == 200)
 	{
-		Images = ParseAlbum(response.buffer);
+		Images = ParseAlbum(Response.buffer);
 	}
 	return Images;
 }
@@ -36,16 +37,16 @@ void ImgurAccess::ImgurGet(std::string endpoint)
 {
 	std::string URL = "https://api.imgur.com";
 
-	ImgurHandle.Setup(URL, &response);
+	Setup(URL);
 	std::string ImgurHeader =
 		"Authorization: Client-ID "
 		+ ClientId;
 
-	ImgurHandle.SetHeaders(ImgurHeader);
-	ImgurHandle.SetOpt(CURLOPT_FOLLOWLOCATION, 1L);
-	ImgurHandle.SetOpt(CURLOPT_SSL_VERIFYPEER, 0L);
-	ImgurHandle.SendRequest();
-	ImgurHandle.Cleanup();
+	SetHeaders(ImgurHeader);
+	SetOpt(CURLOPT_FOLLOWLOCATION, 1L);
+	SetOpt(CURLOPT_SSL_VERIFYPEER, 0L);
+	SendRequest();
+	Cleanup();
 }
 
 

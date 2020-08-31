@@ -21,7 +21,7 @@ bool Saver::LoadLogins()
 			{"password", "PASSWORD_HERE"},
 			{"useragent", "USERAGENT_HERE"}};
 
-			settingsfilling["acounts"].push_back(account);
+			settingsfilling["accounts"].push_back(account);
 
 		input << settingsfilling.dump(4);
 		return success;
@@ -66,7 +66,7 @@ void Saver::RetrieveSaved()
 {
 		std::string endpoint = UserAccount.Username
 		+ "/saved/?limit="
-		+ std::to_string(100);
+		+ std::to_string(args.limit);
 		if (after != "")
 		{
 			endpoint +=
@@ -76,10 +76,10 @@ void Saver::RetrieveSaved()
 }
 
 
-void Saver::ParseSaved()
+bool Saver::ParseSaved()
 {
 	try {
-		 	nlohmann::json root = nlohmann::json::parse(response.buffer);
+		 	nlohmann::json root = nlohmann::json::parse(Response.buffer);
 			// See if there is any after tag
 			if (root.contains("after"))
 			{
@@ -92,11 +92,12 @@ void Saver::ParseSaved()
 			}
 	} catch(nlohmann::json::exception& e) {
 		std::cerr << e.what() << std::endl;
-		throw;
+		return false;
 	}
+	return true;
 }
 
-Saver::Saver() : RedditAccess(), IsLoggedIn(false), after(), imgur(nullptr)
+Saver::Saver() : after()
 {
 	after = std::string();
 	if (IsUnixBased)
@@ -110,7 +111,24 @@ Saver::Saver() : RedditAccess(), IsLoggedIn(false), after(), imgur(nullptr)
 	}
 }
 
-bool Saver::scan_cmd(int argc, char* argv[])
+bool Saver::GetSaved()
+{
+	RetrieveSaved();
+	if (Response.HttpState != 200)
+	{
+		std::cerr << "Uh oh! Something went wrong!: I failed to get saved items!" << std::endl;
+		return false;
+	}
+	else {
+		if (!ParseSaved()) {
+			std::cerr << "Uh oh! Something went wrong!: I failed to parse saved items!" << std::endl;
+			return false;
+		}
+	}
+	return true;
+}
+
+bool Saver::ScanArgs(int argc, char* argv[])
 {
 	for (int i = 1; i < argc; i++)
 	{
@@ -320,9 +338,9 @@ bool Saver::scan_cmd(int argc, char* argv[])
 
 void Saver::Download(std::string URL)
 {
-	RedditHandle.Setup(URL, &response);
-	RedditHandle.SendRequest();
-	RedditHandle.Cleanup();
+	Setup(URL);
+	SendRequest();
+	Cleanup();
 }
 
 

@@ -8,14 +8,6 @@
 #include <cassert>
 
 
-class State
-{
-public:
-	State() : HttpState(0l), Message(), buffer(){}
-	long HttpState;
-	std::string Message;
-	std::string buffer;
-};
 
 
 typedef struct _BasicRequestRAII
@@ -31,12 +23,12 @@ typedef struct _BasicRequestRAII
 class BasicRequest
 {
 public:
-	BasicRequest() : Handle(nullptr), result(CURLE_OK), headers(nullptr), dest(nullptr)  {}
+	BasicRequest() : Handle(nullptr), result(CURLE_OK), headers(nullptr) {}
 	/*
 	Setup(std::string, bool), assigns a URL to the cURL handle and adjusts it to be
 	either a GET request or a POST request
 	*/
-	void Setup(std::string URL, State* dest, bool POST = false);
+	void Setup(std::string URL, bool POST = false);
 	void SetHeaders(std::string header);
 	template<typename Y>
 	void SetOpt(CURLoption option, Y data);
@@ -48,12 +40,20 @@ public:
 	void SendRequest();
 	void Cleanup();
 
+	struct State
+	{
+		State() : HttpState(0l), Message(), buffer(), ContentType(){}
+		long HttpState;
+		std::string Message;
+		std::string buffer;
+		std::string ContentType;
+	}Response;
 private:
 	CURL* Handle;
 	CURLcode result;
 	struct curl_slist *headers;
-	State* dest;
 	void WriteToState();
 	void Perform();
-	size_t writedat(char* buffer, size_t size, size_t nmemb, std::string& dest);
 };
+
+size_t writedat(char* buffer, size_t size, size_t nmemb, std::string& dest);

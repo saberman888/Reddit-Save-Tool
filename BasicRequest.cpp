@@ -2,7 +2,7 @@
 #include <iostream>
 
 
-void BasicRequest::Setup(std::string URL, State* dest, bool POST)
+void BasicRequest::Setup(std::string URL, bool POST)
 {
 	Handle = curl_easy_init();
 	if (!Handle)
@@ -10,9 +10,11 @@ void BasicRequest::Setup(std::string URL, State* dest, bool POST)
 		std::cerr << "Error, Failed to allocate cURL Handle" << std::endl;
 		abort();
 	}
-	this->dest = dest;
-	WriteToState();
 	SetOpt(CURLOPT_URL, URL.c_str());
+	// Initialize Response's variable to be empty incase if there is anything already there
+	Response.buffer.clear();
+	Response.HttpState = 0l;
+	Response.Message.clear();
 	WriteToState();
 	if (POST)
 		SetOpt(CURLOPT_POST, 1L);
@@ -66,10 +68,10 @@ void BasicRequest::GetInfo(CURLINFO option, Y* data)
 
 void BasicRequest::WriteToState()
 {
-	SetOpt(CURLOPT_WRITEFUNCTION, &BasicRequest::writedat);
-	SetOpt(CURLOPT_WRITEDATA, &dest->buffer);
-	GetInfo(CURLINFO_RESPONSE_CODE, &dest->HttpState);
-	GetInfo(CURLINFO_CONTENT_TYPE, &dest->buffer);
+	SetOpt(CURLOPT_WRITEFUNCTION, &writedat);
+	SetOpt(CURLOPT_WRITEDATA, &Response.buffer);
+	GetInfo(CURLINFO_RESPONSE_CODE, &Response.HttpState);
+	GetInfo(CURLINFO_CONTENT_TYPE, &Response.ContentType);
 }
 
 void BasicRequest::AddParams(std::string params)
@@ -91,24 +93,23 @@ void BasicRequest::AddUserAgent(std::string useragent)
 void BasicRequest::Perform()
 {
 	assert(Handle != nullptr);
-	State ReturnResult;
 	if (headers != nullptr)
 		SetOpt(CURLOPT_HTTPHEADER, headers);
 	this->result = curl_easy_perform(Handle);
 
 	if (result != CURLE_OK) {
-		ReturnResult.Message = curl_easy_strerror(result);
+		Response.Message = curl_easy_strerror(result);
 		std::cerr << curl_easy_strerror(result) << std::endl;
 	}
 }
 
-size_t BasicRequest::writedat(char* buffer, size_t size, size_t nmemb, std::string& dest)
+size_t writedat(char* buffer, size_t size, size_t nmemb, std::string& dest)
 {
-	// remove any existing data from dest
-	dest.clear();
-	dest.push_back(*buffer);
+	for(int i = 0; i < size * nmemb; i++)
+		dest.push_back(buffer[i]);
 	return size * nmemb;
 }
+
 
 _BasicRequestRAII::_BasicRequestRAII()
 {

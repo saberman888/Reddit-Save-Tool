@@ -32,23 +32,24 @@ class Saver : public RedditAccess
 {
 public:
 	Saver();
-	~Saver() { delete imgur; }
 	bool LoadLogins();
-	bool scan_cmd(int argc, char* argv[]);
-
-	bool IsLoggedIn;
-	std::string after;
+	// Gets 100 posts per iteration
+	bool GetSaved();
+	bool ScanArgs(int argc, char* argv[]);
 	fs::path MediaPath;
-	CMDArgs args;
-	ImgurAccess* imgur;
+	
+	// Handles for Imgur were going to use for imgur links
+	ImgurAccess ImgurHandle;
+
 	// 1000 is the max number of elements I can pull from a user's saved
 	std::vector<Json> content;
 
 	bool IsAVideo(Json Post);
 	bool IsImage(std::string link);
-
-	void RetrieveSaved();
-	void ParseSaved();
-
 	void Download(std::string URL);
+private:
+	CMDArgs args;
+	std::string after;
+	void RetrieveSaved();
+	bool ParseSaved();
 };
