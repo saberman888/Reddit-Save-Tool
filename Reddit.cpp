@@ -25,6 +25,7 @@ void RedditAccess::RedditGetRequest(std::string endpoint)
 	SetUserAgent(UserAccount.UserAgent);
 	SetHeaders("Authorization: bearer " + UserAccount.Token);
 	SendRequest();
+	Cleanup();
 }
 
 void RedditAccess::ReadJson()
@@ -68,7 +69,6 @@ void RedditAccess::AccessToken()
 		+ UserAccount.Password
 		+ "&scope=%20save%20read%20history";
 	SetPostfields(postfields);
-	SetOpt(CURLOPT_VERBOSE, 1L);
 	SendRequest();
 	Cleanup();
 }

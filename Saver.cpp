@@ -62,11 +62,15 @@ bool Saver::LoadLogins()
 }
 
 
-void Saver::RetrieveSaved()
+void Saver::RetrieveSaved(int count)
 {
-		std::string endpoint = UserAccount.Username
-		+ "/saved/?limit="
-		+ std::to_string(args.limit);
+	std::string endpoint = "user/"
+		+ UserAccount.Username
+		+ "/saved/"
+		+ "?limit="
+		+ std::to_string(100)
+		+ "&count="
+		+ std::to_string(count);
 		if (after != "")
 		{
 			endpoint +=
@@ -81,14 +85,17 @@ bool Saver::ParseSaved()
 	try {
 		 	nlohmann::json root = nlohmann::json::parse(Response.buffer);
 			// See if there is any after tag
-			if (root.contains("after"))
+			nlohmann::json data = root.at("data");
+			if (data.contains("after"))
 			{
 				// Make sure after is not null
-				if(!root.is_null()) // store it into after
-					after = root.at("after").get<std::string>();
+				if (!data.at("after").is_null()) { // store it into after
+					after = data.at("after").get<std::string>();
+					//after = after.substr(3, after.size() - 1);
+				}
 				// If there is an after tag, it is pretty much a given
 				// that a listing is present too, so add that listing into content
-				content.push_back(root.at("children"));
+				content.push_back(data.at("children"));
 			}
 	} catch(nlohmann::json::exception& e) {
 		std::cerr << e.what() << std::endl;
@@ -99,7 +106,6 @@ bool Saver::ParseSaved()
 
 Saver::Saver() : after()
 {
-	after = std::string();
 	if (IsUnixBased)
 	{
 		// TODO: Give an option to store in anywhere other than the home directory
@@ -111,12 +117,12 @@ Saver::Saver() : after()
 	}
 }
 
-bool Saver::GetSaved()
+bool Saver::GetSaved(int count)
 {
-	RetrieveSaved();
-	if (Response.HttpState != 200)
+	RetrieveSaved(count);
+	if (!Response.AllGood())
 	{
-		std::cerr << "Uh oh! Something went wrong!: I failed to get saved items!" << std::endl;
+		std::cerr << "Uh oh! Something went wrong!: I failed to get saved items from oauth.reddit.com!" << std::endl;
 		return false;
 	}
 	else {

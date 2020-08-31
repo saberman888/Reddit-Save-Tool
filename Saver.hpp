@@ -34,10 +34,10 @@ public:
 	Saver();
 	bool LoadLogins();
 	// Gets 100 posts per iteration
-	bool GetSaved();
+	bool GetSaved(int count);
 	bool ScanArgs(int argc, char* argv[]);
 	fs::path MediaPath;
-	
+	std::string after;
 	// Handles for Imgur were going to use for imgur links
 	ImgurAccess ImgurHandle;
 
@@ -49,7 +49,6 @@ public:
 	void Download(std::string URL);
 private:
 	CMDArgs args;
-	std::string after;
-	void RetrieveSaved();
+	void RetrieveSaved(int count);
 	bool ParseSaved();
 };
