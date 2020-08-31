@@ -8,13 +8,13 @@
 class ImgurAccess : public BasicRequest
 {
 public:
-	ImgurAccess(std::string ClientId) : ClientId(ClientId) {}
+	ImgurAccess() : ClientId(ClientId) {}
 	std::string GetImage(std::string ImageHash);
 	std::vector<std::string> GetAlbum(std::string AlbumHash);
 	bool IsImage(std::string URL);
 	bool IsAlbum(std::string URL);
-private:
 	std::string ClientId;
+private:
 	void ImgurGet(std::string URL);
 
 	std::string ParseImage(std::string json);

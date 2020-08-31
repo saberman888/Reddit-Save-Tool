@@ -52,8 +52,8 @@ bool Saver::LoadLogins()
 			// Check if a Imgur Client ID is present
 			if (root.contains("imgur_client_id"))
 			{
-				// if it is, allocate a new instance of imgur and initialize it with the client id
-				imgur = new ImgurAccess(root.at("imgur_client_id").get<std::string>());
+				// if it is, assign it to ImgurHandle.ClientId
+				ImgurHandle.ClientId = root.at("imgur_client_id").get<std::string>();
 			}
 			success = true;
 		}

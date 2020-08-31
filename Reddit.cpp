@@ -43,7 +43,7 @@ void RedditAccess::ReadJson()
 				Response.Message = parse.at("message").get<std::string>();
 			}
 			else {
-				Response.Message = parse.at("error").get<std::string>() << std::endl;
+				Response.Message = parse.at("error").get<std::string>();
 			}
 		}
 		else {
