@@ -7,7 +7,7 @@ bool RedditAccess::AccessReddit()
 	AccessToken();
 	// Try to parse whatever response we get
 	ReadJson();
-	if (Response.HttpState != 200)
+	if (!Response.AllGood())
 	{
 		std::cerr << "Error, failed to get Reddit access token" << std::endl;
 		std::cerr << "Error " << Response.HttpState << ": " << Response.Message << std::endl;
@@ -22,8 +22,7 @@ void RedditAccess::RedditGetRequest(std::string endpoint)
 		"https://oauth.reddit.com/"
 		+ endpoint;
 	Setup(URL);
-	AddUserAgent(UserAccount.UserAgent);
-	SetOpt(CURLOPT_SSL_VERIFYPEER, 0L);
+	SetUserAgent(UserAccount.UserAgent);
 	SetHeaders("Authorization: bearer " + UserAccount.Token);
 	SendRequest();
 }
@@ -59,17 +58,16 @@ void RedditAccess::ReadJson()
 void RedditAccess::AccessToken()
 {
 	Setup("https://www.reddit.com/api/v1/access_token", true);
-	SetOpt(CURLOPT_SSL_VERIFYPEER, 1L);
-	AddUserAgent(UserAccount.UserAgent);
+	SetUserAgent(UserAccount.UserAgent);
 	std::string usrpwd = UserAccount.ClientId + ":" + UserAccount.Secret;
-	AddUserPWD(usrpwd);
-	std::string postfields =
-		"grant_type=password&username"
+	SetCreds(usrpwd);
+	std::string postfields = 
+		"grant_type=password&username="
 		+ UserAccount.Username
 		+ "&password="
 		+ UserAccount.Password
 		+ "&scope=%20save%20read%20history";
-	AddParams(postfields);
+	SetPostfields(postfields);
 	SetOpt(CURLOPT_VERBOSE, 1L);
 	SendRequest();
 	Cleanup();

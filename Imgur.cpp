@@ -44,7 +44,6 @@ void ImgurAccess::ImgurGet(std::string endpoint)
 
 	SetHeaders(ImgurHeader);
 	SetOpt(CURLOPT_FOLLOWLOCATION, 1L);
-	SetOpt(CURLOPT_SSL_VERIFYPEER, 0L);
 	SendRequest();
 	Cleanup();
 }
