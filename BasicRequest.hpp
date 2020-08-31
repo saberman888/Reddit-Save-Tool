@@ -54,7 +54,6 @@ private:
 	CURL* Handle;
 	struct curl_slist *headers;
 	void WriteToState();
-	void Perform();
 };
 
 size_t writedat(char* buffer, size_t size, size_t nmemb, std::string& dest);

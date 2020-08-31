@@ -18,12 +18,11 @@ void BasicRequest::Setup(std::string URL, bool POST)
 	Response.HttpState = 0l;
 	Response.Message.clear();
 	WriteToState();
-	
-}
 
-void BasicRequest::SendRequest()
-{
-	return Perform();
+#if defined(_DEBUG)
+	SetOpt(CURLOPT_VERBOSE, 1L);
+#endif
+	
 }
 
 void BasicRequest::Cleanup()
@@ -47,7 +46,6 @@ template<typename Y>
 void BasicRequest::SetOpt(CURLoption option, Y data)
 {
 	assert(Handle != nullptr);
-	std::cout << data << std::endl;
 	Response.result = curl_easy_setopt(this->Handle, option, data);
 	if (Response.result != CURLE_OK)
 	{
@@ -90,7 +88,7 @@ void BasicRequest::SetUserAgent(std::string useragent)
 }
 
 
-void BasicRequest::Perform()
+void BasicRequest::SendRequest()
 {
 	assert(Handle != nullptr);
 	if (headers != nullptr)
