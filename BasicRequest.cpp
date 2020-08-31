@@ -12,12 +12,13 @@ void BasicRequest::Setup(std::string URL, bool POST)
 	}
 	SetOpt(CURLOPT_URL, URL.c_str());
 	// Initialize Response's variable to be empty incase if there is anything already there
+	if (POST)
+		SetOpt(CURLOPT_POST, 1L);
 	Response.buffer.clear();
 	Response.HttpState = 0l;
 	Response.Message.clear();
 	WriteToState();
-	if (POST)
-		SetOpt(CURLOPT_POST, 1L);
+	
 }
 
 void BasicRequest::SendRequest()
@@ -46,10 +47,11 @@ template<typename Y>
 void BasicRequest::SetOpt(CURLoption option, Y data)
 {
 	assert(Handle != nullptr);
-	result = curl_easy_setopt(this->Handle, option, data);
-	if (result != CURLE_OK)
+	std::cout << data << std::endl;
+	Response.result = curl_easy_setopt(this->Handle, option, data);
+	if (Response.result != CURLE_OK)
 	{
-		std::cerr << curl_easy_strerror(result) << std::endl;
+		std::cerr << curl_easy_strerror(Response.result) << std::endl;
 		abort();
 	}
 }
@@ -58,10 +60,10 @@ template<typename Y>
 void BasicRequest::GetInfo(CURLINFO option, Y* data)
 {
 	assert(Handle != nullptr);
-	result = curl_easy_getinfo(this->Handle, option, data);
-	if (result != CURLE_OK)
+	Response.result = curl_easy_getinfo(this->Handle, option, data);
+	if (Response.result != CURLE_OK)
 	{
-		std::cerr << curl_easy_strerror(result) << std::endl;
+		std::cerr << curl_easy_strerror(Response.result) << std::endl;
 		abort();
 	}
 }
@@ -70,21 +72,19 @@ void BasicRequest::WriteToState()
 {
 	SetOpt(CURLOPT_WRITEFUNCTION, &writedat);
 	SetOpt(CURLOPT_WRITEDATA, &Response.buffer);
-	GetInfo(CURLINFO_RESPONSE_CODE, &Response.HttpState);
-	GetInfo(CURLINFO_CONTENT_TYPE, &Response.ContentType);
 }
 
-void BasicRequest::AddParams(std::string params)
+void BasicRequest::SetPostfields(std::string params)
 {
-	SetOpt(CURLOPT_POSTFIELDS, params.c_str());
+	SetOpt(CURLOPT_COPYPOSTFIELDS, params.c_str());
 }
 
-void BasicRequest::AddUserPWD(std::string usrpwd)
+void BasicRequest::SetCreds(std::string usrpwd)
 {
 	SetOpt(CURLOPT_USERPWD, usrpwd.c_str());
 }
 
-void BasicRequest::AddUserAgent(std::string useragent)
+void BasicRequest::SetUserAgent(std::string useragent)
 {
 	SetOpt(CURLOPT_USERAGENT, useragent.c_str());
 }
@@ -95,12 +95,14 @@ void BasicRequest::Perform()
 	assert(Handle != nullptr);
 	if (headers != nullptr)
 		SetOpt(CURLOPT_HTTPHEADER, headers);
-	this->result = curl_easy_perform(Handle);
+	Response.result = curl_easy_perform(Handle);
 
-	if (result != CURLE_OK) {
-		Response.Message = curl_easy_strerror(result);
-		std::cerr << curl_easy_strerror(result) << std::endl;
+	if (Response.result != CURLE_OK) {
+		Response.Message = curl_easy_strerror(Response.result);
 	}
+
+	GetInfo(CURLINFO_RESPONSE_CODE, &Response.HttpState);
+	GetInfo(CURLINFO_CONTENT_TYPE, &Response.ContentType);
 }
 
 size_t writedat(char* buffer, size_t size, size_t nmemb, std::string& dest)
