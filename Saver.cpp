@@ -62,16 +62,14 @@ bool Saver::LoadLogins()
 }
 
 
-void Saver::RetrieveSaved(int count)
+void Saver::RetrieveSaved()
 {
 	std::string endpoint = "user/"
 		+ UserAccount.Username
 		+ "/saved/"
 		+ "?limit="
-		+ std::to_string(100)
-		+ "&count="
-		+ std::to_string(count);
-		if (after != "")
+		+ std::to_string(100);
+		if (!after.empty())
 		{
 			endpoint +=
 				"&after=" + after;
@@ -86,16 +84,27 @@ bool Saver::ParseSaved()
 		 	nlohmann::json root = nlohmann::json::parse(Response.buffer);
 			// See if there is any after tag
 			nlohmann::json data = root.at("data");
-			if (data.contains("after"))
-			{
 				// Make sure after is not null
-				if (!data.at("after").is_null()) { // store it into after
-					after = data.at("after").get<std::string>();
-					//after = after.substr(3, after.size() - 1);
+			if (!data.at("after").is_null()) { // store it into after
+				after = data.at("after").get<std::string>();
+			}
+			else {
+				after = std::string();
+			}
+			// If there is an after tag, it is pretty much a given
+			// that a listing is present too, so add that listing into content
+			int size = data.at("children").size();
+			for (auto& child : data.at("children"))
+			{
+				if (child.at("kind").get<std::string>() == "t3")
+				{
+					auto data = child.at("data");
+					RedditObject post;
+					post.id = data.at("id").get<std::string>();
+					post.url = data.at("url").get<std::string>();
+					post.is_video = data.at("is_video").get<bool>();
+					content.push_back(post);
 				}
-				// If there is an after tag, it is pretty much a given
-				// that a listing is present too, so add that listing into content
-				content.push_back(data.at("children"));
 			}
 	} catch(nlohmann::json::exception& e) {
 		std::cerr << e.what() << std::endl;
@@ -106,28 +115,28 @@ bool Saver::ParseSaved()
 
 Saver::Saver() : after()
 {
-	if (IsUnixBased)
-	{
-		// TODO: Give an option to store in anywhere other than the home directory
-		//MediaPath = std::string(getenv("HOME")) + "/Reddit/" + UserAccount.Username;
-		MediaPath = "./images/";
-	}
-	else {
-		MediaPath = "./images/";
-	}
+#if defined(_WIN32) || defined(WIN32)
+	//const char* HomeDirectory = "%USERPROFILE%";
+	std::string home = ".";
+#else
+	const char* HomeDirectory = "HOME";
+	std::string home = std::getenv(HomeDirectory);
+#endif
+	
+	MediaPath =  home + "/Reddit/" + UserAccount.Username;
 }
 
-bool Saver::GetSaved(int count)
+bool Saver::GetSaved()
 {
-	RetrieveSaved(count);
+	RetrieveSaved();
 	if (!Response.AllGood())
 	{
-		std::cerr << "Uh oh! Something went wrong!: I failed to get saved items from oauth.reddit.com!" << std::endl;
+		std::cerr << "Uh oh! Something went wrong!: I failed to get saved posts from oauth.reddit.com!" << std::endl;
 		return false;
 	}
 	else {
 		if (!ParseSaved()) {
-			std::cerr << "Uh oh! Something went wrong!: I failed to parse saved items!" << std::endl;
+			std::cerr << "Uh oh! Something went wrong!: I failed to parse saved posts!" << std::endl;
 			return false;
 		}
 	}
@@ -345,14 +354,24 @@ bool Saver::ScanArgs(int argc, char* argv[])
 void Saver::Download(std::string URL)
 {
 	Setup(URL);
+	SetOpt(CURLOPT_FOLLOWLOCATION, 1L);
 	SendRequest();
 	Cleanup();
+}
+
+void Saver::Write(fs::path filepath, std::string filename)
+{
+	fs::path fullpath = this->MediaPath / filepath;
+	fs::create_directories(fullpath);
+
+	std::fstream out(fullpath / filename, std::ios::out | std::ios::binary);
+	out << Response.buffer;
 }
 
 
 bool Saver::IsAVideo(Json Post)
 {
-	return (Post["is_video"].get<bool>() || (Post["url"].get<std::string>()).rfind("https://v.redd.it", 0) != std::string::npos);
+	return (Post["is_video"].get<bool>() && (Post["url"].get<std::string>()).rfind("https://v.redd.it", 0) != std::string::npos);
 }
 
 bool Saver::IsImage(std::string link)

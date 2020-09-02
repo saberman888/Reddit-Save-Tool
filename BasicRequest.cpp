@@ -100,7 +100,12 @@ void BasicRequest::SendRequest()
 	}
 
 	GetInfo(CURLINFO_RESPONSE_CODE, &Response.HttpState);
-	GetInfo(CURLINFO_CONTENT_TYPE, &Response.ContentType);
+
+	char* tempContentType = nullptr;
+	GetInfo(CURLINFO_CONTENT_TYPE, &tempContentType);
+
+	if(!tempContentType)
+		Response.ContentType = tempContentType;
 }
 
 size_t writedat(char* buffer, size_t size, size_t nmemb, std::string& dest)
