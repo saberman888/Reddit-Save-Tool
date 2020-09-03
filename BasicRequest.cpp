@@ -104,7 +104,7 @@ void BasicRequest::SendRequest()
 	char* tempContentType = nullptr;
 	GetInfo(CURLINFO_CONTENT_TYPE, &tempContentType);
 
-	if(!tempContentType)
+	if(tempContentType)
 		Response.ContentType = tempContentType;
 }
 
