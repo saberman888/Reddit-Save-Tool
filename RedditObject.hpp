@@ -6,10 +6,11 @@
 class RedditObject
 {
 public:
-	RedditObject() : id(), url(), is_video(false){}
+	RedditObject() : id(), url(), is_video(false), is_self(false){}
 	std::string id;
 	std::string url;
 	bool is_video;
+	bool is_self;
 	
 	std::string GetAudioUrl();
 	std::string GetVideoUrl();
