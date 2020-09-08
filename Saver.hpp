@@ -41,11 +41,13 @@ public:
 
 	// 1000 is the max number of elements I can pull from a user's saved
 	std::vector<RedditObject> content;
-
+	
 	bool IsAVideo(Json Post);
 	bool IsImage(std::string link);
+
 	void Download(std::string URL);
 	void Write(fs::path filepath, std::string filename);
+	bool WriteContent(RedditObject post);
 private:
 	CMDArgs args;
 	void RetrieveSaved();

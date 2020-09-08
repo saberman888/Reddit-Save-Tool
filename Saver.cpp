@@ -100,9 +100,10 @@ bool Saver::ParseSaved()
 				{
 					auto data = child.at("data");
 					RedditObject post;
-					post.id = data.at("id").get<std::string>();
+					post.id = data.at("id").get<std::string>(); 
 					post.url = data.at("url").get<std::string>();
 					post.is_video = data.at("is_video").get<bool>();
+					post.is_self = data.at("is_self").get<bool>();
 					content.push_back(post);
 				}
 			}
@@ -366,6 +367,48 @@ void Saver::Write(fs::path filepath, std::string filename)
 
 	std::fstream out(fullpath / filename, std::ios::out | std::ios::binary);
 	out << Response.buffer;
+}
+
+bool Saver::WriteContent(RedditObject post)
+{
+	if(post.is_video){
+		fs::path TempPath = MediaPath / std::string(UserAccount.Username + "/tmp/");
+		Download(post.GetAudioUrl());
+		if (!Response.AllGood()) {
+			return false;
+		}
+		else {
+			
+			Write(TempPath, "audio.mp4");
+		}
+
+		Download(post.GetVideoUrl());
+		if (!Response.AllGood()) {
+			return false;
+		}
+		else {
+			Write(TempPath, "video.mp4");
+		}
+
+		std::string ffmpegCommand = 
+			"ffmpeg -i " 
+			+ TempPath.string() 
+			+ "/video.mp4 -i "
+			+ TempPath.string() +
+			"/audio.mp4 -c copy " 
+			+ TempPath.string()
+			+ "/"
+			+post.id + ".mkv";
+		std::system(ffmpegCommand.c_str());
+	} else if(!post.is_self) {
+		Download(post.url);
+		// Check if everything went well and make sure it is an image
+		if (std::string image = Response.ContentType.substr(0,6);  Response.AllGood() && image == "image/") {
+			std::string extension = "." + splitString(Response.ContentType, ';')[0].substr(6);
+			Write(UserAccount.Username, post.id + extension);
+			std::cout << "Writing Image: " << post.url << std::endl;
+		}
+	}
 }
 
 
