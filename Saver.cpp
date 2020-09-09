@@ -123,7 +123,7 @@ Saver::Saver() : after()
 	home = std::getenv(HomeDirectory);
 #endif
 
-	MediaPath =  home + "/Reddit/" + UserAccount.Username;
+	MediaPath /=  std::string(home + "/Reddit/" + UserAccount.Username);
 }
 
 bool Saver::GetSaved()
@@ -371,7 +371,7 @@ void Saver::Write(fs::path filepath, std::string filename)
 bool Saver::WriteContent(RedditObject post)
 {
 	if(post.is_video){
-		fs::path TempPath = MediaPath / std::string(UserAccount.Username + "/tmp/");
+		fs::path TempPath = MediaPath / "/tmp/";
 		Download(post.GetAudioUrl());
 		if (!Response.AllGood()) {
 			return false;
@@ -388,16 +388,11 @@ bool Saver::WriteContent(RedditObject post)
 		else {
 			Write(TempPath, "video.mp4");
 		}
-
-		std::string ffmpegCommand =
-			"ffmpeg -i "
-			+ TempPath.string()
-			+ "/video.mp4 -i "
-			+ TempPath.string() +
-			"/audio.mp4 -c copy "
-			+ TempPath.string()
-			+ "/"
-			+post.id + ".mkv";
+		// TODO: Add option specify if someone wants ffmpeg to not overwrite videos
+		std::string ffmpegCommand = "ffmpeg -y -i ";
+		ffmpegCommand.append(TempPath.string()); ffmpegCommand.append("/video.mp4 -i ");
+		ffmpegCommand.append(TempPath.string()); ffmpegCommand.append("/audio.mp4 -c copy ");
+		ffmpegCommand.append(MediaPath.string()); ffmpegCommand.append("/" + post.id + ".mkv");
 		std::system(ffmpegCommand.c_str());
 	} else if(!post.is_self) {
 		Download(post.url);
