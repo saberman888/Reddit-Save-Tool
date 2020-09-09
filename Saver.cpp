@@ -93,14 +93,13 @@ bool Saver::ParseSaved()
 			}
 			// If there is an after tag, it is pretty much a given
 			// that a listing is present too, so add that listing into content
-			int size = data.at("children").size();
 			for (auto& child : data.at("children"))
 			{
 				if (child.at("kind").get<std::string>() == "t3")
 				{
 					auto data = child.at("data");
 					RedditObject post;
-					post.id = data.at("id").get<std::string>(); 
+					post.id = data.at("id").get<std::string>();
 					post.url = data.at("url").get<std::string>();
 					post.is_video = data.at("is_video").get<bool>();
 					post.is_self = data.at("is_self").get<bool>();
@@ -116,14 +115,14 @@ bool Saver::ParseSaved()
 
 Saver::Saver() : after()
 {
+	std::string home = ".";
 #if defined(_WIN32) || defined(WIN32)
 	//const char* HomeDirectory = "%USERPROFILE%";
-	std::string home = ".";
 #else
 	const char* HomeDirectory = "HOME";
-	std::string home = std::getenv(HomeDirectory);
+	home = std::getenv(HomeDirectory);
 #endif
-	
+
 	MediaPath =  home + "/Reddit/" + UserAccount.Username;
 }
 
@@ -378,7 +377,7 @@ bool Saver::WriteContent(RedditObject post)
 			return false;
 		}
 		else {
-			
+
 			Write(TempPath, "audio.mp4");
 		}
 
@@ -390,12 +389,12 @@ bool Saver::WriteContent(RedditObject post)
 			Write(TempPath, "video.mp4");
 		}
 
-		std::string ffmpegCommand = 
-			"ffmpeg -i " 
-			+ TempPath.string() 
+		std::string ffmpegCommand =
+			"ffmpeg -i "
+			+ TempPath.string()
 			+ "/video.mp4 -i "
 			+ TempPath.string() +
-			"/audio.mp4 -c copy " 
+			"/audio.mp4 -c copy "
 			+ TempPath.string()
 			+ "/"
 			+post.id + ".mkv";
@@ -409,6 +408,7 @@ bool Saver::WriteContent(RedditObject post)
 			std::cout << "Writing Image: " << post.url << std::endl;
 		}
 	}
+	return true;
 }
 
 

@@ -35,7 +35,7 @@ bool ImgurAccess::IsAlbum(std::string URL)
 
 void ImgurAccess::ImgurGet(std::string endpoint)
 {
-	std::string URL = "https://api.imgur.com";
+	std::string URL = "https://api.imgur.com" + endpoint;
 
 	Setup(URL);
 	std::string ImgurHeader =
