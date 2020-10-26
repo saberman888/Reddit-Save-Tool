@@ -40,9 +40,10 @@ typedef enum sortby
 
 class CMDArgs{
 public:
-	CMDArgs();
+	CMDArgs() : EnableImages(true),  EnableText(true), DisableComments(false), reverse(false), VideosEnabled(true), Verbose(false), EnableImgurAlbums(true), limit(1000), username(""), sort(Subreddit){}
+
 	//bool OnlyImages, OnlyText, EnableImages, Everything, EnableComments, EnableText, rha, xlist;
-	bool EnableImages, EnableText, DisableComments, RHA, reverse, VideosEnabled, Verbose, EnableCommentThreads, EnableImgurAlbums;
+	bool EnableImages, EnableText, DisableComments, reverse, VideosEnabled, Verbose, EnableImgurAlbums;
 	int limit;
 	std::string username;
 	std::vector<std::string> whitelist, blacklist, uwhitelist, ublacklist, dblacklist, dwhitelist;

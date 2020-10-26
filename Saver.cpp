@@ -34,7 +34,7 @@ bool Saver::LoadLogins()
 		// See how many accounts are present
 		// If there are more than one, continue and scan for the requested account or the first one
 		// depending on the option used in args
-		if (root.at("accounts").size() > 0)
+		if (root.at("accounts").size() > 1)
 		{
 			for (auto& elem : root.at("accounts"))
 			{
@@ -55,33 +55,42 @@ bool Saver::LoadLogins()
 				// if it is, assign it to ImgurHandle.ClientId
 				ImgurHandle.ClientId = root.at("imgur_client_id").get<std::string>();
 			}
-			success = true;
 		}
+		else {
+			auto elem = root.at("accounts").at(0);
+			UserAccount.Username = elem.at("username").get<std::string>();
+			UserAccount.Password = elem.at("password").get<std::string>();
+			UserAccount.ClientId = elem.at("client_id").get<std::string>();
+			UserAccount.Secret = elem.at("secret").get<std::string>();
+			UserAccount.UserAgent = elem.at("useragent").get<std::string>();
+		}
+		success = true;
 	}
 	return success;
 }
 
 
-void Saver::RetrieveSaved()
+State Saver::RetrieveSaved()
 {
-	std::string endpoint = "user/"
+	std::string Endpoint = "user/"
 		+ UserAccount.Username
 		+ "/saved/"
 		+ "?limit="
-		+ std::to_string(100);
+		+ std::to_string(1000);
+
 		if (!after.empty())
 		{
-			endpoint +=
+			Endpoint +=
 				"&after=" + after;
 		}
-		RedditGetRequest(endpoint);
+		return RedditGetRequest(Endpoint);
 }
 
 
-bool Saver::ParseSaved()
+bool Saver::ParseSaved(const std::string& buffer)
 {
 	try {
-		 	nlohmann::json root = nlohmann::json::parse(Response.buffer);
+		 	nlohmann::json root = nlohmann::json::parse(buffer);
 			// See if there is any after tag
 			nlohmann::json data = root.at("data");
 				// Make sure after is not null
@@ -97,13 +106,30 @@ bool Saver::ParseSaved()
 			{
 				if (child.at("kind").get<std::string>() == "t3")
 				{
-					auto data = child.at("data");
 					RedditObject post;
-					post.id = data.at("id").get<std::string>();
-					post.url = data.at("url").get<std::string>();
-					post.is_video = data.at("is_video").get<bool>();
-					post.is_self = data.at("is_self").get<bool>();
-					content.push_back(post);
+					// Check if the child is an image, video or self post
+					// assign it the according data, url and id
+					if(get_bool(child, "is_self"))
+					{
+						//TODO: Implement getting self text
+					} else if(get_bool(child, "is_video"))
+					{
+						auto redditvideo = child.at("media").at("reddit_video");
+						if(!get_bool(redditvideo, "is_gif"))
+						{
+							post.VideoInfo.height = get_int(redditvideo, "height");
+							post.VideoInfo.IsGif = false;
+						} else {
+							// TODO: Implement  getting gifs
+							continue;
+						}
+					} else {
+						// Since child is an image assign kind, IMAGE
+						post.kind = IMAGE;
+					}
+					post.URL = get_string(child, "url");
+					post.Id = get_string(child, "id");
+					posts.push_back(post);
 				}
 			}
 	} catch(nlohmann::json::exception& e) {
@@ -119,8 +145,14 @@ Saver::Saver() : after()
 #if defined(_WIN32) || defined(WIN32)
 	//const char* HomeDirectory = "%USERPROFILE%";
 #else
-	const char* HomeDirectory = "HOME";
-	home = std::getenv(HomeDirectory);
+	char* user = std::getenv("USER");
+    
+    MediaPath /= std::string(
+        "/home/"
+        +std::string(user)
+        +"/Reddit/"
+	+UserAccount.Username);
+        
 #endif
 
 	MediaPath /=  std::string(home + "/Reddit/" + UserAccount.Username);
@@ -128,21 +160,17 @@ Saver::Saver() : after()
 
 bool Saver::GetSaved()
 {
-	RetrieveSaved();
-	if (!Response.AllGood())
+	for (int i = 0; i < 10; i++)
 	{
-		std::cerr << "Uh oh! Something went wrong!: I failed to get saved posts from oauth.reddit.com!" << std::endl;
-		return false;
-	}
-	else {
-		if (!ParseSaved()) {
-			std::cerr << "Uh oh! Something went wrong!: I failed to parse saved posts!" << std::endl;
+		auto r = RetrieveSaved();
+		if(!ParseSaved(r.buffer))
+		{
 			return false;
 		}
 	}
 	return true;
 }
-
+/*
 bool Saver::ScanArgs(int argc, char* argv[])
 {
 	for (int i = 1; i < argc; i++)
@@ -164,9 +192,6 @@ bool Saver::ScanArgs(int argc, char* argv[])
 		}
 		else if (arg == "-dc") {
 			args.DisableComments = true;
-		}
-		else if (arg == "-rha") {
-			args.RHA = true;
 		}
 		else if (arg == "-h" || arg == "--help") {
 			std::cout << "Flags:" << std::endl
@@ -283,9 +308,11 @@ bool Saver::ScanArgs(int argc, char* argv[])
 			else {
 				args.ublacklist.push_back(argv[i + 1]);
 			}
-			for (auto& elem : args.ublacklist)
+			for (auto& elem : args.ublacklist){
+				std::cout << elem << std::endl;
 				//boost::algorithm::to_lower(elem);
-			i++;
+				//i++;
+			}
 		} else if(arg == "-uw") {
 			if (i + 1 >= argc) {
 				std::cout << "Second argument for -uw options not present" << std::endl;
@@ -299,6 +326,7 @@ bool Saver::ScanArgs(int argc, char* argv[])
 				args.uwhitelist.push_back(argv[i + 1]);
 			}
 			for (auto& elem : args.uwhitelist)
+				std::cout << elem;
 				//boost::algorithm::to_lower(elem);
 			i++;
 		}
@@ -338,8 +366,6 @@ bool Saver::ScanArgs(int argc, char* argv[])
             args.EnableImgurAlbums = false;
         } else if(arg == "-nv") {
             args.VideosEnabled = false;
-        } else if(arg == "-ect") {
-            args.EnableCommentThreads = true;
         }
 		else {
 			std::cerr << "Error, unkown command: " << argv[i] << std::endl;
@@ -349,58 +375,51 @@ bool Saver::ScanArgs(int argc, char* argv[])
 	}
 	return true;
 }
+*/
 
-
-void Saver::Download(std::string URL)
+State Saver::Download(std::string URL)
 {
-	Setup(URL);
-	SetOpt(CURLOPT_FOLLOWLOCATION, 1L);
-	SendRequest();
-	Cleanup();
+	BasicRequest handle;
+	handle.Setup(URL);
+	handle.SetOpt(CURLOPT_FOLLOWLOCATION, 1L);
+	State result = handle.SendRequest();
+	handle.Cleanup();
+	return result;
 }
 
-void Saver::Write(fs::path filepath, std::string filename)
-{
-	fs::path fullpath = this->MediaPath / filepath;
-	fs::create_directories(fullpath);
-
-	std::fstream out(fullpath / filename, std::ios::out | std::ios::binary);
-	out << Response.buffer;
-}
 
 bool Saver::WriteContent(RedditObject post)
 {
-	if(post.is_video){
-		fs::path TempPath = MediaPath / "/tmp/";
-		Download(post.GetAudioUrl());
-		if (!Response.AllGood()) {
+	if(post.kind == VIDEO){
+		// Download audio and video
+		// if running on linux use /tmp to temporary store audio and video
+		fs::path temp = "/tmp";
+		auto result = Download(post.GetAudioUrl());
+		if(!result.AllGood())
+		{
+			std::cerr << "Warning: Failed to get audio from " << post.Id << std::endl;
+			std::cerr << "Error: " << result.HttpState<< " " << result.Message << std::endl;
 			return false;
 		}
-		else {
-
-			Write(TempPath, "audio.mp4");
-		}
-
-		Download(post.GetVideoUrl());
-		if (!Response.AllGood()) {
+		post.Write(temp, "audio.mp4", result.buffer);
+		result = Download(post.GetVideoUrl());
+		if(!result.AllGood())
+		{
+			std::cerr << "Warning: Failed to get video from " << post.Id << std::endl;
+			std::cerr << "Error: " << result.HttpState << " " << result.Message << std::endl;
 			return false;
 		}
-		else {
-			Write(TempPath, "video.mp4");
-		}
-		// TODO: Add option specify if someone wants ffmpeg to not overwrite videos
-		std::string ffmpegCommand = "ffmpeg -y -i ";
-		ffmpegCommand.append(TempPath.string()); ffmpegCommand.append("/video.mp4 -i ");
-		ffmpegCommand.append(TempPath.string()); ffmpegCommand.append("/audio.mp4 -c copy ");
-		ffmpegCommand.append(MediaPath.string()); ffmpegCommand.append("/" + post.id + ".mkv");
-		std::system(ffmpegCommand.c_str());
-	} else if(!post.is_self) {
-		Download(post.url);
+		post.Write(temp, "video.mp4", result.buffer);
+		// and finally mux the audio and video together
+		post.MuxVideo(temp.string(), MediaPath.string());
+		
+	} else if(post.kind == IMAGE) {
+		State resp = Download(post.URL);
 		// Check if everything went well and make sure it is an image
-		if (std::string image = Response.ContentType.substr(0,6);  Response.AllGood() && image == "image/") {
-			std::string extension = "." + splitString(Response.ContentType, ';')[0].substr(6);
-			Write(UserAccount.Username, post.id + extension);
-			std::cout << "Writing Image: " << post.url << std::endl;
+		if (std::string image = resp.ContentType.substr(0,6);  resp.AllGood() && image == "image/") {
+			std::string extension = "." + splitString(resp.ContentType, ';')[0].substr(6);
+			post.Write(MediaPath, post.Id + extension, resp.buffer);
+			std::cout << "Wrote Image: " << post.URL << std::endl;
 		}
 	}
 	return true;
