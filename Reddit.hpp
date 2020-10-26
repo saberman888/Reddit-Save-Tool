@@ -8,12 +8,12 @@
 #include "Imgur.hpp"
 
 
-class RedditAccess : public BasicRequest {
+class RedditAccess{
 public:
 	RedditAccess(){};
-	// obtain_token gets the access token from Reddit*/
+	// obtain_token gets the access token from Reddit
 	bool AccessReddit();
-	void RedditGetRequest(std::string endpoint);
+	State RedditGetRequest(std::string endpoint);
 	// Where we're going to store user information when we parse it from the config file
 	struct
 	{
@@ -23,6 +23,6 @@ public:
 	} UserAccount;
 
 private:
-	void AccessToken();
-	void ReadJson();
+	State AccessToken();
+	void ReadJson(State& Response);
 };

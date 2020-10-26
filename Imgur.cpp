@@ -3,10 +3,10 @@
 std::string ImgurAccess::GetImage(std::string ImageHash)
 {
 	std::string json;
-	ImgurGet(ImageHash);
-	if (Response.HttpState == 200)
+	auto result = ImgurGet(ImageHash);
+	if (result.HttpState == 200)
 	{
-		return ParseImage(Response.buffer);
+		return ParseImage(result.buffer);
 	}
 	return std::string();
 }
@@ -15,10 +15,10 @@ std::vector<std::string> ImgurAccess::GetAlbum(std::string Album)
 {
 	std::string endpoint = "/a/" + Album;
 	std::vector<std::string> Images;
-	ImgurGet(endpoint);
-	if (Response.HttpState == 200)
+	auto result = ImgurGet(endpoint);
+	if (result.AllGood())
 	{
-		Images = ParseAlbum(Response.buffer);
+		Images = ParseAlbum(result.buffer);
 	}
 	return Images;
 }
@@ -33,7 +33,7 @@ bool ImgurAccess::IsAlbum(std::string URL)
 	return (URL.rfind("https://imgur.com/a/", 0) != std::string::npos);
 }
 
-void ImgurAccess::ImgurGet(std::string endpoint)
+State ImgurAccess::ImgurGet(std::string endpoint)
 {
 	std::string URL = "https://api.imgur.com" + endpoint;
 
@@ -44,8 +44,9 @@ void ImgurAccess::ImgurGet(std::string endpoint)
 
 	SetHeaders(ImgurHeader);
 	SetOpt(CURLOPT_FOLLOWLOCATION, 1L);
-	SendRequest();
+	State result = SendRequest();
 	Cleanup();
+	return result;
 }
 
 

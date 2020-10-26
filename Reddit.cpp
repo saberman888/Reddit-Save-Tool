@@ -4,33 +4,34 @@
 bool RedditAccess::AccessReddit()
 {
 	// Connect to Reddit and authenticate with them
-	AccessToken();
+	State result = AccessToken();
 	// Try to parse whatever response we get
-	ReadJson();
-	if (!Response.AllGood())
+	ReadJson(result);
+	if (!result.AllGood())
 	{
 		std::cerr << "Error, failed to get Reddit access token" << std::endl;
-		std::cerr << "Error " << Response.HttpState << ": " << Response.Message << std::endl;
+		std::cerr << "Error " << result.HttpState << ": " << result.Message << std::endl;
 		return false;
 	}
 	return true;
 }
 
-void RedditAccess::RedditGetRequest(std::string endpoint)
+State RedditAccess::RedditGetRequest(std::string endpoint)
 {
+	BasicRequest handle;
 	std::string URL =
 		"https://oauth.reddit.com/"
 		+ endpoint;
-	Setup(URL);
-	SetUserAgent(UserAccount.UserAgent);
-	SetHeaders("Authorization: bearer " + UserAccount.Token);
-	SendRequest();
-	Cleanup();
+	handle.Setup(URL);
+	handle.SetUserAgent(UserAccount.UserAgent);
+	handle.SetHeaders("Authorization: bearer " + UserAccount.Token);
+	State result = handle.SendRequest();
+	handle.Cleanup();
+	return result;
 }
 
-void RedditAccess::ReadJson()
+void RedditAccess::ReadJson(State& Response)
 {
-
 	try {
 		nlohmann::json parse = nlohmann::json::parse(Response.buffer);
 		if (parse.contains("access_token"))
@@ -56,19 +57,21 @@ void RedditAccess::ReadJson()
 }
 
 
-void RedditAccess::AccessToken()
+State RedditAccess::AccessToken()
 {
-	Setup("https://www.reddit.com/api/v1/access_token", true);
-	SetUserAgent(UserAccount.UserAgent);
+	BasicRequest handle;
+	handle.Setup("https://www.reddit.com/api/v1/access_token", true);
+	handle.SetUserAgent(UserAccount.UserAgent);
 	std::string usrpwd = UserAccount.ClientId + ":" + UserAccount.Secret;
-	SetCreds(usrpwd);
+	handle.SetCreds(usrpwd);
 	std::string postfields = 
 		"grant_type=password&username="
 		+ UserAccount.Username
 		+ "&password="
 		+ UserAccount.Password
 		+ "&scope=%20save%20read%20history";
-	SetPostfields(postfields);
-	SendRequest();
-	Cleanup();
+	handle.SetPostfields(postfields);
+	State result = handle.SendRequest();
+	handle.Cleanup();
+	return result;
 }

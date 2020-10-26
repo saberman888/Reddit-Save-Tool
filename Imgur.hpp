@@ -15,7 +15,7 @@ public:
 	bool IsAlbum(std::string URL);
 	std::string ClientId;
 private:
-	void ImgurGet(std::string URL);
+	State ImgurGet(std::string URL);
 
 	std::string ParseImage(std::string json);
 	std::vector<std::string> ParseAlbum(std::string json);
