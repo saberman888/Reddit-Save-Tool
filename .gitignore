@@ -31,11 +31,23 @@
 *.out
 *.app
 
+# Some personal directories in my machine
 *.vs
 tests/*
 out/*
 ./CMakeFiles
 ./bin
-/vsbuild/Reddit-Save-Tool
+/vsbuild
 /CMakeFiles
 /bin/debug
+
+.cmake
+.vscode
+CMakeCache.txt
+CMakeLists.txt.user
+Makefile
+*.kdev4
+*.cmake
+*.txt
+*.json
+reddit-saver
