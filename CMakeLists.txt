@@ -6,7 +6,7 @@ find_package(CURL REQUIRED)
 find_package(nlohmann_json REQUIRED)
 
 set(CMAKE_CXX_FLAGS "-Wall -Werror -Wfatal-errors")
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -ggdb")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -ggdb3")
 
 add_compile_options(-DVERSION="2020-10-25")
 

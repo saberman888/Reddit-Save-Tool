@@ -28,3 +28,15 @@ void RedditObject::Write(fs::path filepath, std::string filename, const std::str
 	std::fstream out(fullpath.string(), std::ios::out | std::ios::binary);
 	out << buffer;
 }
+
+void RedditObject::WriteText(fs::path filepath)
+{
+  fs::create_directories(filepath);
+  fs::path fullpath = filepath / std::string(Id + ".txt");
+  std::fstream out(fullpath.string(), std::ios::out);
+  out << "Author: " << author << std::endl;
+  out << "Date: " << BasicRequest::UTCToString(created_utc, "%Y-%m-%d @ %H:%M %p") << std::endl;
+  out << "ID: " << Id << std::endl;
+  out << "Permalink: " << permalink << std::endl;
+  out << text << std::endl;
+}

@@ -1,77 +1,26 @@
 #include <iostream>
 #include "Saver.hpp"
-#include "nlohmann/json.hpp"
-#include "boost/algorithm/string.hpp"
 #include <cstdlib>
 
 using namespace std;
-// TODO: Add more options for directory structure E.g /Sub/Post_tite/[Content]
-// TODO: Add things like author, permalink and etc to the text files
-// TODO: Create GUI for RSA
-
 /*
-		Flags:
-
-		-i: Only images
-		-a [ACCOUNT]: Load specific account
-		-t: Only text
-		-e: Get everything
-		-dc: Disable comments
-		-l [limit]: Sets the limit of the number of comments, the default being 250 items
-		-rha: Enable reddit-html-archiver output
-		-v/--version: Get version
-		-whl/-whitelist [sub,sub] - whitelists a patricular sub
-		-bl/-blacklist [sub,sub] - blackists a paticular sub
-		-sb/sort_by [sort] - sort media
-		-r/-reverse - reverse the saved item list
-
-	*/
-
+ * TODOS
+ *
+ * TODO: Add filtering options for subreddit, nsfw and more
+ * TODO: Add getting gifv
+ * TODO: Finish adding in Imgur suppoer
+ * TODO: Allow ffmpeg command to be changed using the settings file
+ * TODO: Add folder organization options for subreddit, nsfw and types.
+ * TODO: Add option to keep video or audio file if getting one of them fails
+ * TODO: In BasicRequest change response from being a pointer to a normal variable
+ * TODO: Add error checking if critical arguments aren't present like --account
+ * TODO: Parse the author,created_utc and permalink from the json in RedditObject
+ * TODO: Remove base.cpp/.hpp from the project because I no longer need it
+ * TODO: Add -DNDEBUG=1 to release builds in CMakeLists.txt
+ */
 int main(int argc, char* argv[])
 {
-
-	Saver s;
-	bool result = s.scan_cmd(argc, argv);
-	if (!result)
-	{
-		return -1;
-	}
-
-	if (!s.LoadLogins())
-	{
-		return -1;
-	}
-
-	s.init_logs();
-	std::cout << "Requesting access to Reddit..." << std::endl;
-	State w = s.AccessReddit();;
-	if (w.http_state != 200)
-	{
-		std::cout << "Error, failed to get a Reddit access token, " << w.http_state << " : " << w.message << std::endl;
-		return -1;
-	}
-	std::vector<Item*> iv;
-	s.AccessPosts(iv);
-
-	if (s.args.reverse)
-	{
-		std::reverse(std::begin(iv),std::end(iv));
-	}
-
-	std::cout << "Processed: " << iv.size() << std::endl;
-	if ((s.args.EnableText || s.args.EnableImages || s.args.VideosEnabled) && !s.args.RHA) {
-		std::cout << "Beginning to download content" << std::endl;
-		s.download_content(iv); // TODO: Add sorting options to the commandline arguments
-	}
-
-	if (s.args.RHA) {
-		// TODO: Add filtering options to commandline arguments
-		std::cout << "Writing RHA CSVs" << std::endl;
-		s.WriteLinkCSV(iv);
-	}
-
-	std::cout << "Done." << std::endl;
-
-
+	BasicRequestRAII braii;
+	Saver start(argc, argv);
 	return 0;
 }

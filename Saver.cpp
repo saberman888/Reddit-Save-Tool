@@ -38,7 +38,7 @@ bool Saver::LoadLogins()
 		{
 			for (auto& elem : root.at("accounts"))
 			{
-				if (std::string username = elem.at("username").get<std::string>(); args.username == username)
+				if (std::string username = elem.at("username").get<std::string>(); args["account"] == username)
 				{
 					UserAccount.Username = username;
 					UserAccount.Password = elem.at("password").get<std::string>();
@@ -78,11 +78,8 @@ State Saver::RetrieveSaved()
 		+ "?limit="
 		+ std::to_string(1000);
 
-		if (!after.empty())
-		{
-			Endpoint +=
-				"&after=" + after;
-		}
+		Endpoint +=
+			"&after=" + after;
 		return RedditGetRequest(Endpoint);
 }
 
@@ -90,10 +87,16 @@ State Saver::RetrieveSaved()
 bool Saver::ParseSaved(const std::string& buffer)
 {
 	try {
+#ifndef NDEBUG
+    dump(buffer, "buffer.json");
+#endif
 		 	nlohmann::json root = nlohmann::json::parse(buffer);
-			// See if there is any after tag
+#ifndef NDEBUG
+      dump(root, "root.json");
+#endif
+      // See if there is any after tag
 			nlohmann::json data = root.at("data");
-				// Make sure after is not null
+      // Make sure after is not null. If it is, it means we've reached the end of the listing
 			if (!data.at("after").is_null()) { // store it into after
 				after = data.at("after").get<std::string>();
 			}
@@ -104,33 +107,58 @@ bool Saver::ParseSaved(const std::string& buffer)
 			// that a listing is present too, so add that listing into content
 			for (auto& child : data.at("children"))
 			{
+#ifndef NDEBUG
+        dump(child, "child.json");
+#endif
+
+				//std::fstream out("data.json", std::ios::out);
+				//out << child.dump(4);
+				RedditObject post;
+				auto data = child.at("data");
+        // Check if child is a post or t3
 				if (child.at("kind").get<std::string>() == "t3")
 				{
-					RedditObject post;
-					// Check if the child is an image, video or self post
-					// assign it the according data, url and id
-					if(get_bool(child, "is_self"))
+					// Check if the following conditions are true:
+          // 1. is_self is true or if the post is indeed a self post
+          // 2. Make sure the the program wasn't called to skip self posts
+          // 3. Check if selftext exists, because if it doesn't exist. It means the post got deleted before it got archived.
+          if (get_bool(data, "is_self") && !find(args, "--no-selfposts") && DoesExist(data, "selftext"))
 					{
-						//TODO: Implement getting self text
-					} else if(get_bool(child, "is_video"))
-					{
-						auto redditvideo = child.at("media").at("reddit_video");
-						if(!get_bool(redditvideo, "is_gif"))
-						{
-							post.VideoInfo.height = get_int(redditvideo, "height");
-							post.VideoInfo.IsGif = false;
-						} else {
-							// TODO: Implement  getting gifs
-							continue;
-						}
-					} else {
-						// Since child is an image assign kind, IMAGE
-						post.kind = IMAGE;
+						post.text = get_string(data, "selftext");
 					}
-					post.URL = get_string(child, "url");
-					post.Id = get_string(child, "id");
-					posts.push_back(post);
+          // Check if the post is a video and if the program wasn't called to skip videos
+					else if (get_bool(data, "is_video") && !find(args, "--no-video"))
+					{
+            // Get the height only because when we download the video file
+            // it usually titled as DASH_{height} e.g DASH_1080.mp4
+            auto redditvideo = data.at("media").at("reddit_video");
+            post.VideoInfo.height = get_int(redditvideo, "height");
+            post.VideoInfo.IsGif = get_bool(redditvideo, "is_gif");
+
+            if (post.VideoInfo.IsGif)
+            {
+              // TODO: Implement getting GIFs
+              continue;
+            }
+            post.kind = VIDEO;
+
+					}
+					else {
+						if (find(args, "--no-images"))
+							continue;
+
+						// Since child is an image assign kind, IMAGE
+						post.kind = LINKPOST;
+					}
+					post.URL = get_string(data, "url");
 				}
+				else if(child.at("kind").get<std::string>() == "t1" && !find(args, "--no-comments")) {
+					post.kind = COMMENT;
+					post.text = get_string(data, "body");
+					post.URL = get_string(data, "link_url");
+				}
+				post.Id = get_string(data, "id");
+				posts.push_back(post);
 			}
 	} catch(nlohmann::json::exception& e) {
 		std::cerr << e.what() << std::endl;
@@ -139,243 +167,53 @@ bool Saver::ParseSaved(const std::string& buffer)
 	return true;
 }
 
-Saver::Saver() : after()
+Saver::Saver(int argc, char* argv[]) : after()
 {
-	std::string home = ".";
-#if defined(_WIN32) || defined(WIN32)
-	//const char* HomeDirectory = "%USERPROFILE%";
-#else
-	char* user = std::getenv("USER");
-    
-    MediaPath /= std::string(
-        "/home/"
-        +std::string(user)
-        +"/Reddit/"
-	+UserAccount.Username);
-        
-#endif
 
-	MediaPath /=  std::string(home + "/Reddit/" + UserAccount.Username);
+  if(ScanOptions(argc, argv) && LoadLogins()){
+    // If on Windows ,just store everthing in the current working directory under Reddit
+    // If under Linux, store stuff in the home directory under /home/$USER/Pictures/Reddit
+#if defined(_WIN32) || defined(WIN32)
+    MediaPath /= std::string("./Reddit/" + UserAccount.Username);
+#else
+    char* home = std::getenv("HOME");
+
+      MediaPath /=
+        std::string(home)
+        +std::string("/Pictures/Reddit/"+UserAccount.Username);
+
+#endif
+    std::cout << "Writing to: " << MediaPath.string() << std::endl;
+
+    if(AccessReddit() && GetSaved())
+    {
+      for(auto& post : posts)
+      {
+        try {
+          WriteContent(post);
+        }catch(std::exception& e) {
+          std::cerr << "Uh Oh! Something went wrong!" << std::endl;
+          std::cerr << e.what() << std::endl;
+        }
+      }
+    }
+  } else {
+    std::cout << "Failed to load account." << std::endl;
+  }
 }
 
 bool Saver::GetSaved()
 {
-	for (int i = 0; i < 10; i++)
+	do
 	{
 		auto r = RetrieveSaved();
 		if(!ParseSaved(r.buffer))
 		{
 			return false;
 		}
-	}
+	} while (!after.empty());
 	return true;
 }
-/*
-bool Saver::ScanArgs(int argc, char* argv[])
-{
-	for (int i = 1; i < argc; i++)
-	{
-		std::string arg = argv[i];
-		if (arg == "-i") {
-			args.EnableImages = false;
-		}
-		else if (arg == "-t") {
-			args.EnableText = false;
-		}
-		else if (arg == "-a") {
-			if (i + 1 >= argc) {
-				std::cout << "Error: Secondary argument for -a option not present" << std::endl;
-				return false;
-			}
-			args.username = argv[i + 1];
-			i++;
-		}
-		else if (arg == "-dc") {
-			args.DisableComments = true;
-		}
-		else if (arg == "-h" || arg == "--help") {
-			std::cout << "Flags:" << std::endl
-
-				<< "	-i: Disable images" << std::endl
-				<< "	-a [ACCOUNT] : Load specific account" << std::endl
-				<< "	-t : Disable text" << std::endl
-				<< "\t-b : Disable imgur albums" << std::endl
-				<< "\t-nv : Disable videos" << std::endl
-				<< "	-dc : Disable single comments" << std::endl
-				<< "	-ect : Enable the retrieval of comment threads" << std::endl
-				<< "	-l[limit] : Sets the limit of the number of comments, the default being 250 items" << std::endl
-				<< "	-rha : Enable reddit - html - archiver output" << std::endl
-				<< "	-v / --version : Get version" << std::endl
-				<< "	-whl / -whitelist[sub, sub] : whitelists a patricular sub or user with -whl" << std::endl
-				<< "	-bl / -blacklist[sub, sub] : blackists a paticular sub or user with -bl" << std::endl
-				<< "	-sb/ -sortby [subreddit,title,id or unsorted] : Arranges the media downloaded based on the selected sort" << std::endl
-				<< "	-r/-reverse reverses : the list of saved items" << std::endl
-				<< "	-uw [user,user] : Enable whitelisting users" << std::endl
-				<< "	-ub	[user,user] : Enable blacklisting of users" << std::endl
-				<< "\t-bd [domain,domain] : Enable blacklisting of domain names" << std::endl
-				<< "\t-bw [domain,domain] : Enable whitelisting of domain names" << std::endl
-				<< "	-vb : Enable output of more logs" << std::endl;
-			return false;
-		}
-		else if (arg == "-v" || arg == "-version") {
-#if defined(VERSION)
-			std::cout << VERSION << std::endl;
-#else
-			std::cout << "No set version" << std::endl;
-#endif
-			return false;
-		}
-		else if (arg == "-l") {
-			if (i + 1 >= argc) {
-				std::cout << "Secondary argument for -l option not present" << std::endl;
-				return false;
-			}
-
-			args.limit = atoi(argv[i + 1]);
-			i++;
-		}
-		else if (arg == "-whitelist" || arg == "-whl") {
-			if (i + 1 >= argc) {
-				std::cout << "Second argument for -whitelist/-whl options not present" << std::endl;
-				return false;
-			}
-			if (std::string comma_check = argv[i + 1]; comma_check.rfind(",") != std::string::npos) {
-
-				//boost::split(args.whitelist, argv[i + 1], boost::is_any_of(","));
-				args.whitelist = splitString(std::string(argv[i + 1]),',');
-			}
-			else {
-				args.whitelist.push_back(argv[i + 1]);
-			}
-			for (auto& elem : args.whitelist)
-				elem = ToLower(elem);
-			i++;
-		}
-		else if (arg == "-blacklist" || arg == "-bl") {
-			if (i + 1 >= argc) {
-				std::cout << "Second argument for -blacklist/-bl options not present" << std::endl;
-				return false;
-			}
-			if (std::string comma_check = argv[i + 1]; comma_check.rfind(",") != std::string::npos) {
-
-				//boost::split(args.blacklist, argv[i + 1], boost::algorithm::is_any_of(","));
-				args.blacklist = splitString(std::string(argv[i + 1]), ',');
-			}
-			else {
-				args.blacklist.push_back(argv[i + 1]);
-			}
-			for (auto& elem : args.whitelist)
-				elem = ToLower(elem);
-			i++;
-		}
-		else if (arg == "-sb" || arg == "-sortby")
-		{
-			if (i + 1 >= argc) {
-				std::cout << "Second argument for -sb/-sortby options not present" << std::endl;
-				return false;
-			}
-			std::string sort = ToLower(std::string(argv[i + 1]));
-			if (sort == "subreddit" || sort == "sub")
-			{
-				args.sort = Subreddit;
-			}
-			else if (sort == "id") {
-				args.sort = ID;
-			}
-			else if (sort == "title") {
-				args.sort = Title;
-			}
-			else if(sort == "unsorted"){
-				args.sort = Unsorted;
-			}
-			else {
-				args.sort = Subreddit;
-			}
-			i++;
-		}
-		else if (arg == "-r" || arg == "-reverse") {
-			args.reverse = true;
-		}
-		else if(arg == "-ub") {
-			if (i + 1 >= argc) {
-				std::cout << "Second argument for -ub options not present" << std::endl;
-				return false;
-			}
-			if (std::string comma_check = argv[i + 1]; comma_check.rfind(",") != std::string::npos) {
-
-				//boost::split(args.ublacklist, argv[i + 1], boost::algorithm::is_any_of(","));
-			}
-			else {
-				args.ublacklist.push_back(argv[i + 1]);
-			}
-			for (auto& elem : args.ublacklist){
-				std::cout << elem << std::endl;
-				//boost::algorithm::to_lower(elem);
-				//i++;
-			}
-		} else if(arg == "-uw") {
-			if (i + 1 >= argc) {
-				std::cout << "Second argument for -uw options not present" << std::endl;
-				return false;
-			}
-			if (std::string comma_check = argv[i + 1]; comma_check.rfind(",") != std::string::npos) {
-
-				//boost::split(args.uwhitelist, argv[i + 1], boost::algorithm::is_any_of(","));
-			}
-			else {
-				args.uwhitelist.push_back(argv[i + 1]);
-			}
-			for (auto& elem : args.uwhitelist)
-				std::cout << elem;
-				//boost::algorithm::to_lower(elem);
-			i++;
-		}
-		else if(arg == "-bd") {
-			if (i + 1 >= argc) {
-				std::cout << "Second argument for -bd options not present" << std::endl;
-				return false;
-			}
-			if (std::string comma_check = argv[i + 1]; comma_check.rfind(",") != std::string::npos) {
-
-				//boost::split(args.dblacklist, argv[i + 1], boost::algorithm::is_any_of(","));
-			}
-			else {
-				args.dblacklist.push_back(argv[i + 1]);
-			}
-			for (auto& elem : args.ublacklist)
-				//boost::algorithm::to_lower(elem);
-			i++;
-		} else if(arg == "-wd") {
-			if (i + 1 >= argc) {
-				std::cout << "Second argument for -wd options not present" << std::endl;
-				return false;
-			}
-			if (std::string comma_check = argv[i + 1]; comma_check.rfind(",") != std::string::npos) {
-
-				//boost::split(args.dwhitelist, argv[i + 1], boost::algorithm::is_any_of(","));
-			}
-			else {
-				args.dwhitelist.push_back(argv[i + 1]);
-			}
-			for (auto& elem : args.dwhitelist)
-				//boost::algorithm::to_lower(elem);
-			i++;
-		} else if(arg == "-vb") {
-			args.Verbose = true;
-		} else if(arg == "-b") {
-            args.EnableImgurAlbums = false;
-        } else if(arg == "-nv") {
-            args.VideosEnabled = false;
-        }
-		else {
-			std::cerr << "Error, unkown command: " << argv[i] << std::endl;
-			std::cout << "Try -h or --help for a list of commands" << std::endl;
-			return false;
-		}
-	}
-	return true;
-}
-*/
 
 State Saver::Download(std::string URL)
 {
@@ -412,8 +250,8 @@ bool Saver::WriteContent(RedditObject post)
 		post.Write(temp, "video.mp4", result.buffer);
 		// and finally mux the audio and video together
 		post.MuxVideo(temp.string(), MediaPath.string());
-		
-	} else if(post.kind == IMAGE) {
+
+	} else if(post.kind == LINKPOST) {
 		State resp = Download(post.URL);
 		// Check if everything went well and make sure it is an image
 		if (std::string image = resp.ContentType.substr(0,6);  resp.AllGood() && image == "image/") {
@@ -421,21 +259,51 @@ bool Saver::WriteContent(RedditObject post)
 			post.Write(MediaPath, post.Id + extension, resp.buffer);
 			std::cout << "Wrote Image: " << post.URL << std::endl;
 		}
-	}
+	} else if(post.kind == SELFPOST || post.kind == COMMENT) {
+   post.WriteText(MediaPath);
+  }
 	return true;
 }
 
 
-bool Saver::IsAVideo(Json Post)
+bool Saver::ScanOptions(int argc, char* argv[])
 {
-	return (Post["is_video"].get<bool>() && (Post["url"].get<std::string>()).rfind("https://v.redd.it", 0) != std::string::npos);
-}
+	bool success = false;
+  if(argc <= 1)
+  {
+    std::cout << "Not enough arguments!" << std::endl;
+  }
 
-bool Saver::IsImage(std::string link)
-{
-	std::array<std::string, 9> urlsnext = { "i.imgur.com", "i.redd.it", ".jpeg", ".bmp", ".png", ".gif", ".jpg", ".tiff", ".webp" };
-	for (std::string elem : urlsnext)
-		if (link.rfind(elem) != std::string::npos)
-			return true;
-	return false;
+	for(int i = 1; i < argc; i++)
+	{
+		std::string j = argv[i];
+    if(j == "-a" || j == "--account")
+    {
+      i++;
+      args["account"] = std::string(argv[i]);
+      success = true;
+    }
+    else if (j == "--no-images" || j == "--no-selfposts" || j == "--no-comments" || j == "--no-videos") {
+      args[j] = "0";
+    }
+    else if (j == "--no-text") {
+      args["--no-comments"] = "0";
+      args["--no-selfposts"] = "0";
+    }
+    else if (j == "--only-video") {
+      args["--no-comments"] = "0";
+      args["--no-selfposts"] = "0";
+      args["--no-images"] = "0";
+    }
+    else if (j == "--only-images") {
+      args["--no-comments"] = "0";
+      args["--no-selfposts"] = "0";
+      args["--no-video"] = "0";
+    }
+    else {
+      std::cerr << j << " is not a valid argument." << std::endl;
+      success = false;
+    }
+  }
+  return success;
 }

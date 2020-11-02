@@ -13,7 +13,7 @@ void BasicRequest::Setup(std::string URL, bool POST)
 	Handle = curl_easy_init();
 	if (!Handle)
 	{
-		throw cURLError("Error, Failed to allocate cURL Handle");
+		throw std::runtime_error("Error, Failed to allocate cURL Handle");
 	}
 	this->URL = URL;
 	// Initialize Response's variable to be empty incase if there is anything already there
@@ -56,7 +56,7 @@ void BasicRequest::SetOpt(CURLoption option, Y data)
 	auto result = curl_easy_setopt(this->Handle, option, data);
 	if (Response->result != CURLE_OK)
 	{
-		throw cURLError(curl_easy_strerror(result));
+		throw std::runtime_error(curl_easy_strerror(result));
 	}
 }
 
@@ -67,7 +67,7 @@ void BasicRequest::GetInfo(CURLINFO option, Y* data)
 	auto result = curl_easy_getinfo(this->Handle, option, data);
 	if (Response->result != CURLE_OK)
 	{
-		throw cURLError(curl_easy_strerror(result));
+		throw std::runtime_error(curl_easy_strerror(result));
 	}
 }
 
@@ -141,15 +141,19 @@ State BasicRequest::SendRequest()
 
 	if (Response->result != CURLE_OK) {
 		Response->Message = curl_easy_strerror(Response->result);
+
 	}
 
-	GetInfo(CURLINFO_RESPONSE_CODE, &Response->HttpState);
+	if (Response->result != CURLE_OPERATION_TIMEDOUT)
+	{
+		GetInfo(CURLINFO_RESPONSE_CODE, &Response->HttpState);
+		char* tempContentType = nullptr;
+		GetInfo(CURLINFO_CONTENT_TYPE, &tempContentType);
 
-	char* tempContentType = nullptr;
-	GetInfo(CURLINFO_CONTENT_TYPE, &tempContentType);
-
-	if(tempContentType)
-		Response->ContentType = tempContentType;
+		if (tempContentType)
+			Response->ContentType = tempContentType;
+	}
+	
 	return *Response;
 }
 
@@ -199,7 +203,7 @@ _BasicRequestRAII::_BasicRequestRAII()
 	CURLcode Result = curl_global_init(CURL_GLOBAL_ALL);
 	if (Result != CURLE_OK)
 	{
-		throw cURLError("Failed to initialize curl global init");
+		throw std::runtime_error("Failed to initialize curl global init");
 	}
 }
 

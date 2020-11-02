@@ -10,8 +10,6 @@
 #include <exception>
 #include <ctime>
 
-#define NDEBUG 1
-
 class State
 {
 public:
@@ -24,17 +22,9 @@ public:
 	bool AllGood() { return (Message.empty() && HttpState == 200 && result == CURLE_OK); }
 };
 
-class cURLError : std::exception
-{
-public:
-	cURLError(std::string message) : message(message){}
-	std::string what() { return message; }
-private:
-	std::string message;
-};
 
 /*
-	An RAII struct that manages curl_global_init and curl_global_cleanup
+	An RAII struct that manages curl_global_inir and curl_global_cleanup
 */
 typedef struct _BasicRequestRAII
 {
@@ -55,7 +45,7 @@ public:
 		assigns it to be written to. You can also set it up as a POST request by passing true into the last parameter 
 		and make cURL output more verbosely by passing NDEBUG=Off in CMake.
 
-		Throws cURLError if CURL* Handle fails to initialize.
+		Throws std::runtime_error if CURL* Handle fails to initialize.
 	*/
 	void Setup(std::string URL, bool POST = false);
 	/*
@@ -63,12 +53,12 @@ public:
 	*/
 	void SetHeaders(std::string header);
 	/*
-		Wrapper for curl_easy_setopt. Throws cURLError if anything goes wrong
+		Wrapper for curl_easy_setopt. Throws std::runtime_error if anything goes wrong
 	*/
 	template<typename Y>
 	void SetOpt(CURLoption option, Y data);
 	/*
-		Wrapper for curl_easy_getinfo. Throws cURLError if anything goes wrong
+		Wrapper for curl_easy_getinfo. Throws std::runtime_error if anything goes wrong
 	*/
 	template<typename Y>
 	void GetInfo(CURLINFO option, Y* data);
