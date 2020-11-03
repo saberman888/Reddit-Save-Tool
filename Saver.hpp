@@ -15,7 +15,6 @@
 #include <string>
 
 #include "curl/curl.h"
-#include "base.hpp"
 #include "Reddit.hpp"
 #include "BasicRequest.hpp"
 #include <filesystem>

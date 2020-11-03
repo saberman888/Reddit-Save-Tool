@@ -2,7 +2,6 @@
 #include <string>
 #include <fstream>
 #include "BasicRequest.hpp"
-#include "base.hpp"
 #include "nlohmann/json.hpp"
 #include "curl/curl.h"
 #include "Imgur.hpp"

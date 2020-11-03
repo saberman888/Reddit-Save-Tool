@@ -15,7 +15,6 @@ using namespace std;
  * TODO: In BasicRequest change response from being a pointer to a normal variable
  * TODO: Add error checking if critical arguments aren't present like --account
  * TODO: Remove base.cpp/.hpp from the project because I no longer need it
- * TODO: Add -DNDEBUG=1 to release builds in CMakeLists.txt
  */
 int main(int argc, char* argv[])
 {

@@ -8,9 +8,13 @@ find_package(nlohmann_json REQUIRED)
 set(CMAKE_CXX_FLAGS "-Wall -Werror -Wfatal-errors")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -ggdb3")
 
-add_compile_options(-DVERSION="2020-10-25")
+if(CMAKE_BUILD_TYPE|"Release")
+  add_compile_option(-DNDEBUG=1)
+endif()
 
-add_executable(reddit-saver RedditObject.cpp base.cpp BasicRequest.cpp Imgur.cpp Reddit.cpp Saver.cpp Source.cpp )
+add_compile_options(-DVERSION="2020-11-02")
+
+add_executable(reddit-saver RedditObject.cpp BasicRequest.cpp Imgur.cpp Reddit.cpp Saver.cpp Source.cpp )
 
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC")
 	set(LIBRARIES libcurl.lib nlohmann_json::nlohmann_json)
