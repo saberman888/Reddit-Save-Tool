@@ -14,7 +14,6 @@ using namespace std;
  * TODO: Add option to keep video or audio file if getting one of them fails
  * TODO: In BasicRequest change response from being a pointer to a normal variable
  * TODO: Add error checking if critical arguments aren't present like --account
- * TODO: Parse the author,created_utc and permalink from the json in RedditObject
  * TODO: Remove base.cpp/.hpp from the project because I no longer need it
  * TODO: Add -DNDEBUG=1 to release builds in CMakeLists.txt
  */

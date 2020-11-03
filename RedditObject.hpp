@@ -4,6 +4,7 @@
 #include "nlohmann/json.hpp"
 #include <fstream>
 #include "BasicRequest.hpp"
+#include <ctime>
 
 namespace fs = std::filesystem;
 
@@ -20,10 +21,10 @@ typedef enum RedditType
 class RedditObject
 {
 public:
-	RedditObject() : kind(UNKNOWN), URL(), Id(), text(), author(), permalink(), created_utc(0l), VideoInfo { 0, false }{}
+	RedditObject() : kind(UNKNOWN), URL(), Id(), text(), author(), permalink(), title(), created_utc(0l), VideoInfo { 0, false }{}
 	Post kind;
-	std::string URL, Id, text, author, permalink;
-  long created_utc;
+	std::string URL, Id, text, author, permalink, title;
+  time_t created_utc;
 	
 	struct
 	{

@@ -118,6 +118,8 @@ bool Saver::ParseSaved(const std::string& buffer)
         // Check if child is a post or t3
 				if (child.at("kind").get<std::string>() == "t3")
 				{
+
+          post.title = get_string(data, "title");
 					// Check if the following conditions are true:
           // 1. is_self is true or if the post is indeed a self post
           // 2. Make sure the the program wasn't called to skip self posts
@@ -156,8 +158,12 @@ bool Saver::ParseSaved(const std::string& buffer)
 					post.kind = COMMENT;
 					post.text = get_string(data, "body");
 					post.URL = get_string(data, "link_url");
+          post.title = get_string(data, "link_title");
 				}
+        post.author = get_string(data, "author");
+        post.created_utc = get_long(data, "created_utc");
 				post.Id = get_string(data, "id");
+        post.permalink = get_string(data, "permalink");
 				posts.push_back(post);
 			}
 	} catch(nlohmann::json::exception& e) {
