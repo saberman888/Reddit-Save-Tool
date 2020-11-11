@@ -1,7 +1,7 @@
 #include "Reddit.hpp"
 #include <iostream>
 
-bool RedditAccess::AccessReddit()
+bool RST::RedditAccess::AccessReddit()
 {
 	// Connect to Reddit and authenticate with them
 	State result = AccessToken();
@@ -16,7 +16,7 @@ bool RedditAccess::AccessReddit()
 	return true;
 }
 
-State RedditAccess::RedditGetRequest(std::string endpoint)
+State RST::RedditAccess::RedditGetRequest(std::string endpoint)
 {
 	BasicRequest handle;
 	std::string URL =
@@ -30,7 +30,7 @@ State RedditAccess::RedditGetRequest(std::string endpoint)
 	return result;
 }
 
-void RedditAccess::ReadJson(State& Response)
+void RST::RedditAccess::ReadJson(State& Response)
 {
 	try {
 		nlohmann::json parse = nlohmann::json::parse(Response.buffer);
@@ -57,7 +57,7 @@ void RedditAccess::ReadJson(State& Response)
 }
 
 
-State RedditAccess::AccessToken()
+State RST::RedditAccess::AccessToken()
 {
 	BasicRequest handle;
 	handle.Setup("https://www.reddit.com/api/v1/access_token", true);

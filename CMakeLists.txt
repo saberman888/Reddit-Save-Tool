@@ -14,7 +14,7 @@ endif()
 
 add_compile_options(-DVERSION="2020-11-02")
 
-add_executable(reddit-saver RedditObject.cpp BasicRequest.cpp Imgur.cpp Reddit.cpp Saver.cpp Source.cpp )
+add_executable(reddit-saver base.cpp RedditObject.cpp BasicRequest.cpp Imgur.cpp Reddit.cpp Saver.cpp Source.cpp )
 
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC")
 	set(LIBRARIES libcurl.lib nlohmann_json::nlohmann_json)

@@ -4,20 +4,30 @@
 #include "nlohmann/json.hpp"
 #include <string>
 #include <vector>
+#include "base.hpp"
+namespace ImgurAccess
+{ 
+    inline bool IsAlbum(std::string URL)
+    {
+        return (URL.find("https://imgur.com/a/") != std::string::npos);
+    }
 
-class ImgurAccess : public BasicRequest
-{
-public:
-	ImgurAccess() : ClientId() {}
-	std::string GetImage(std::string ImageHash);
-	std::vector<std::string> GetAlbum(std::string AlbumHash);
-	bool IsImage(std::string URL);
-	bool IsAlbum(std::string URL);
-	std::string ClientId;
-private:
-	State ImgurGet(std::string URL);
+    inline bool IsImgurLink(std::string URL)
+    {
+        return (URL.find("https://imgur.com/",0) != std::string::npos);
+    }
+    
+    inline static std::string GetHash(std::string URL)
+    {
+        return RST::splitString(URL, '/').back();
+    }
+    
+    inline bool IsDirect(std::string URL)
+    {
+        return URL.find("i.imgur.com/",0) != std::string::npos;
+    }
+    
+    std::vector<std::string> GetAlbum(std::string AlbumHash, std::string ClientId); 
+    std::string GetImage(std::string ImageHash, std::string ClientId);
 
-	std::string ParseImage(std::string json);
-	std::vector<std::string> ParseAlbum(std::string json);
-
-};
+}

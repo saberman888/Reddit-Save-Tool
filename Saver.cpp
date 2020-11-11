@@ -2,8 +2,10 @@
 #include <iostream>
 
 
-bool Saver::LoadLogins()
+
+bool RST::Saver::LoadLogins()
 {
+	using namespace SBJSON;
 	bool success = false;
 	std::fstream input("settings.json", std::ios::in | std::ios::out);
 	if (!input.good())
@@ -53,7 +55,11 @@ bool Saver::LoadLogins()
 			if (root.contains("imgur_client_id"))
 			{
 				// if it is, assign it to ImgurHandle.ClientId
-				ImgurHandle.ClientId = root.at("imgur_client_id").get<std::string>();
+				//ImgurHandle->ClientId = root.at("imgur_client_id").get<std::string>();
+				if(root.contains("imgur_client_id"))
+				{
+					ImgurClientId = root.at("imgur_client_id").get<std::string>();
+				}
 			}
 		}
 		else {
@@ -70,7 +76,7 @@ bool Saver::LoadLogins()
 }
 
 
-State Saver::RetrieveSaved()
+State RST::Saver::RetrieveSaved()
 {
 	std::string Endpoint = "user/"
 		+ UserAccount.Username
@@ -84,8 +90,9 @@ State Saver::RetrieveSaved()
 }
 
 
-bool Saver::ParseSaved(const std::string& buffer)
+bool RST::Saver::ParseSaved(const std::string& buffer)
 {
+	using namespace SBJSON;
 	try {
 #ifndef NDEBUG
     dump(buffer, "buffer.json");
@@ -94,9 +101,9 @@ bool Saver::ParseSaved(const std::string& buffer)
 #ifndef NDEBUG
       dump(root, "root.json");
 #endif
-      // See if there is any after tag
+            // See if there is any after tag
 			nlohmann::json data = root.at("data");
-      // Make sure after is not null. If it is, it means we've reached the end of the listing
+            // Make sure after is not null. If it is, it means we've reached the end of the listing
 			if (!data.at("after").is_null()) { // store it into after
 				after = data.at("after").get<std::string>();
 			}
@@ -108,63 +115,34 @@ bool Saver::ParseSaved(const std::string& buffer)
 			for (auto& child : data.at("children"))
 			{
 #ifndef NDEBUG
-        dump(child, "child.json");
+                dump(child, "child.json");
 #endif
-
-				//std::fstream out("data.json", std::ios::out);
-				//out << child.dump(4);
-				RedditObject post;
-				auto data = child.at("data");
-        // Check if child is a post or t3
-				if (child.at("kind").get<std::string>() == "t3")
-				{
-
-          post.title = get_string(data, "title");
-					// Check if the following conditions are true:
-          // 1. is_self is true or if the post is indeed a self post
-          // 2. Make sure the the program wasn't called to skip self posts
-          // 3. Check if selftext exists, because if it doesn't exist. It means the post got deleted before it got archived.
-          if (get_bool(data, "is_self") && !find(args, "--no-selfposts") && DoesExist(data, "selftext"))
-					{
-						post.text = get_string(data, "selftext");
-					}
-          // Check if the post is a video and if the program wasn't called to skip videos
-					else if (get_bool(data, "is_video") && !find(args, "--no-video"))
-					{
-            // Get the height only because when we download the video file
-            // it usually titled as DASH_{height} e.g DASH_1080.mp4
-            auto redditvideo = data.at("media").at("reddit_video");
-            post.VideoInfo.height = get_int(redditvideo, "height");
-            post.VideoInfo.IsGif = get_bool(redditvideo, "is_gif");
-
-            if (post.VideoInfo.IsGif)
-            {
-              // TODO: Implement getting GIFs
-              continue;
-            }
-            post.kind = VIDEO;
-
-					}
-					else {
-						if (find(args, "--no-images"))
-							continue;
-
-						// Since child is an image assign kind, IMAGE
-						post.kind = LINKPOST;
-					}
-					post.URL = get_string(data, "url");
-				}
-				else if(child.at("kind").get<std::string>() == "t1" && !find(args, "--no-comments")) {
-					post.kind = COMMENT;
-					post.text = get_string(data, "body");
-					post.URL = get_string(data, "link_url");
-          post.title = get_string(data, "link_title");
-				}
-        post.author = get_string(data, "author");
-        post.created_utc = get_long(data, "created_utc");
-				post.Id = get_string(data, "id");
-        post.permalink = get_string(data, "permalink");
-				posts.push_back(post);
+                RedditObject r;
+                r.Read(child);
+                
+                switch(r.kind)
+                {
+                    case SELFPOST:
+                        if(!contains(args, "--no-selfposts"))
+                            posts.push_back(r);
+                        break;
+                    case VIDEO:
+                        if(!contains(args, "--no-videos"))
+                            posts.push_back(r);
+                        break;
+                    case COMMENT:
+                        if(!contains(args, "--no-comments"))
+                            posts.push_back(r);
+                        break;
+                    case LINKPOST:
+                        if(!contains(args, "--no-images") || (ImgurAccess::IsImgurLink(r.URL) && !ImgurClientId.empty()))
+                            posts.push_back(r);
+                        break;
+                    case UNKNOWN:
+                        break;
+                    default:
+                        break;
+                }
 			}
 	} catch(nlohmann::json::exception& e) {
 		std::cerr << e.what() << std::endl;
@@ -173,7 +151,7 @@ bool Saver::ParseSaved(const std::string& buffer)
 	return true;
 }
 
-Saver::Saver(int argc, char* argv[]) : after()
+RST::Saver::Saver(int argc, char* argv[]) : after(), ImgurClientId()
 {
 
   if(ScanOptions(argc, argv) && LoadLogins()){
@@ -196,7 +174,7 @@ Saver::Saver(int argc, char* argv[]) : after()
       for(auto& post : posts)
       {
         try {
-          WriteContent(post);
+          WritePost(post);
         }catch(std::exception& e) {
           std::cerr << "Uh Oh! Something went wrong!" << std::endl;
           std::cerr << e.what() << std::endl;
@@ -208,7 +186,7 @@ Saver::Saver(int argc, char* argv[]) : after()
   }
 }
 
-bool Saver::GetSaved()
+bool RST::Saver::GetSaved()
 {
 	do
 	{
@@ -221,7 +199,7 @@ bool Saver::GetSaved()
 	return true;
 }
 
-State Saver::Download(std::string URL)
+State RST::Saver::Download(std::string URL)
 {
 	BasicRequest handle;
 	handle.Setup(URL);
@@ -231,8 +209,34 @@ State Saver::Download(std::string URL)
 	return result;
 }
 
+bool RST::Saver::DownloadImage(RedditObject& post, fs::path destination, std::string filename)
+{
+  State response = Download(post.URL);
+  if(response.AllGood())
+  {
+    // Make the sure the link is an actual image
+    auto ContentType = splitString(splitString(response.ContentType, ';')[0], '/');
+    if(ContentType[0] == "image"){
+      std::string extension = "." + ContentType[1];
+      if(filename.empty())
+          filename = post.Id + extension;
+      else
+          filename += extension;
 
-bool Saver::WriteContent(RedditObject post)
+      post.Write(destination, filename, response.buffer);
+    }
+  } else {
+      std::cerr << "Error: " << response.HttpState << " " << response.Message << std::endl;
+    return false;
+  }
+  return true;
+}
+
+
+
+
+
+bool RST::Saver::WritePost(RedditObject& post)
 {
 	if(post.kind == VIDEO){
 		// Download audio and video
@@ -258,21 +262,41 @@ bool Saver::WriteContent(RedditObject post)
 		post.MuxVideo(temp.string(), MediaPath.string());
 
 	} else if(post.kind == LINKPOST) {
-		State resp = Download(post.URL);
-		// Check if everything went well and make sure it is an image
-		if (std::string image = resp.ContentType.substr(0,6);  resp.AllGood() && image == "image/") {
-			std::string extension = "." + splitString(resp.ContentType, ';')[0].substr(6);
-			post.Write(MediaPath, post.Id + extension, resp.buffer);
-			std::cout << "Wrote Image: " << post.URL << std::endl;
-		}
-	} else if(post.kind == SELFPOST || post.kind == COMMENT) {
-   post.WriteText(MediaPath);
-  }
+        // If there is any imgur links, resolve them so we can have the links directly to the images
+        if(!ImgurClientId.empty())
+            post.ResolveImgurLinks(ImgurClientId);
+        
+		if(post.Gallery.IsGallery)
+        {
+            fs::path savepath = MediaPath / post.title;
+            for(size_t i = 0; i < post.Gallery.Images.size(); i++)
+            {
+                post.URL = post.Gallery.Images[i];
+
+                std::string filename = std::to_string(i) + post.Id;
+
+                bool result = DownloadImage(post, savepath, filename);
+                if(!result){
+                    std::cerr << "Error to download " << post.URL << std::endl;
+                    return result;
+                }
+                std::cout << "Wrote Gallery " << post.title << ": " << i << " out of " << post.Gallery.Images.size()-1 << std::endl;
+            }
+        } else {
+           bool result = DownloadImage(post, MediaPath);
+           if(!result){
+               std::cerr << "Error failed to download " << post.URL << " from " << post.Id << std::endl;
+               return result;
+           }
+        }
+	} else if(post.kind == SELFPOST || post.kind == COMMENT){
+		post.WriteText(MediaPath);
+	}
 	return true;
 }
 
 
-bool Saver::ScanOptions(int argc, char* argv[])
+bool RST::Saver::ScanOptions(int argc, char* argv[])
 {
 	bool success = false;
   if(argc <= 1)
@@ -305,6 +329,9 @@ bool Saver::ScanOptions(int argc, char* argv[])
       args["--no-comments"] = "0";
       args["--no-selfposts"] = "0";
       args["--no-video"] = "0";
+    } else if(j == "--domain" || j == "-D") {
+        args["--domain"] = std::string(argv[i+1]);
+        i++;
     }
     else {
       std::cerr << j << " is not a valid argument." << std::endl;
@@ -312,4 +339,30 @@ bool Saver::ScanOptions(int argc, char* argv[])
     }
   }
   return success;
+}
+
+
+std::vector<std::string> RST::Saver::GetListOp(std::string option)
+{
+    std::vector<std::string> elements;
+    if(contains(args,option))
+    {
+        std::string op = args[option];
+        elements = splitString(op, ',');
+    }
+    return elements;
+}
+
+void RST::Saver::FilterPosts()
+{
+    if(contains(args,"--domain"))
+    {
+        auto domains = GetListOp("--domain");
+        std::vector<RedditObject> tempPosts;
+        tempPosts.reserve(posts.size());
+        
+        std::copy_if(posts.begin(), posts.end(), tempPosts.begin(), [&domains](RedditObject& elem){ return std::find(domains.begin(), domains.end(), elem.domain) != domains.end();});
+        tempPosts.shrink_to_fit();
+        posts = tempPosts;
+    }
 }
