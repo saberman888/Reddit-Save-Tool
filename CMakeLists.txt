@@ -4,6 +4,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 find_package(CURL REQUIRED)
 find_package(nlohmann_json REQUIRED)
+find_package(OpenMP)
 
 set(CMAKE_CXX_FLAGS "-Wall -Werror -Wfatal-errors")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -ggdb3")
@@ -21,5 +22,4 @@ if("${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC")
 else()
 	set(LIBRARIES curl nlohmann_json::nlohmann_json stdc++fs)
 endif()
-
-target_link_libraries(reddit-saver LINK_PUBLIC ${LIBRARIES})
+target_link_libraries(reddit-saver LINK_PUBLIC ${LIBRARIES} OpenMP::OpenMP_CXX)

@@ -36,8 +36,8 @@ reddot-saver -a [ACCOUNT]
 
 ## Building RSA/RST
 
-For a release build, simply calling cmake will do. However, if you want a debug build, add -DCMAKE_BUILD_TYPE=Debug and -DNDEBUG=1 of you want cURL verbose and some assertion off.
-To have a dependency error free compilation, you're going to need libcURL and nlohmann's json header library before initiating cmake configuration.
+For a release build, simply calling cmake will do. However, if you want a debug build, add -DCMAKE_BUILD_TYPE=Debug and -DCURL_VERBOSE=1 of you want cURL verbose enabled.
+To have a dependency error free compilation, you're going to need [libcURL](https://curl.haxx.se) and [nlohmann's json](https://github.com/nlohmann/json) header library before initiating cmake configuration.
 
 ```
 cmake -G "COMPILER_HERE"

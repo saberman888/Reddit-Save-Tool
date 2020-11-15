@@ -171,6 +171,9 @@ RST::Saver::Saver(int argc, char* argv[]) : after(), ImgurClientId()
 
     if(AccessReddit() && GetSaved())
     {
+      std::cout << "Gathered a total of: " << posts.size() << " posts" << std::endl;
+      FilterPosts();
+      #pragma omp parallel for
       for(auto& post : posts)
       {
         try {
@@ -304,6 +307,8 @@ bool RST::Saver::ScanOptions(int argc, char* argv[])
     std::cout << "Not enough arguments!" << std::endl;
   }
 
+  //std::string filterArgs[] = {"--blacklist"}
+
 	for(int i = 1; i < argc; i++)
 	{
 		std::string j = argv[i];
@@ -332,6 +337,8 @@ bool RST::Saver::ScanOptions(int argc, char* argv[])
     } else if(j == "--domain" || j == "-D") {
         args["--domain"] = std::string(argv[i+1]);
         i++;
+    //} else if(std::any_of()) {
+      
     }
     else {
       std::cerr << j << " is not a valid argument." << std::endl;
@@ -353,6 +360,8 @@ std::vector<std::string> RST::Saver::GetListOp(std::string option)
     return elements;
 }
 
+
+
 void RST::Saver::FilterPosts()
 {
     if(contains(args,"--domain"))
@@ -361,8 +370,11 @@ void RST::Saver::FilterPosts()
         std::vector<RedditObject> tempPosts;
         tempPosts.reserve(posts.size());
         
-        std::copy_if(posts.begin(), posts.end(), tempPosts.begin(), [&domains](RedditObject& elem){ return std::find(domains.begin(), domains.end(), elem.domain) != domains.end();});
+        std::copy_if(posts.begin(), posts.end(), std::back_inserter(tempPosts), [&domains](RedditObject& elem){ return (std::find(domains.begin(), domains.end(), elem.domain) != domains.end());});
         tempPosts.shrink_to_fit();
         posts = tempPosts;
-    }
+    } /*else if(contains(args, "--blacklist")){
+      
+    } else if(contains(args, "--whitelist")){
+    }*/
 }

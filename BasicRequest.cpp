@@ -22,7 +22,7 @@ void BasicRequest::Setup(std::string URL, bool POST)
 		SetOpt(CURLOPT_POST, 1L);
 	WriteToState();
 
-#ifndef NDEBUG
+#ifdef CURLVERBOSE
 	SetOpt(CURLOPT_VERBOSE, 1L);
 #endif
 
