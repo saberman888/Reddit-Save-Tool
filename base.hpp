@@ -12,4 +12,13 @@ namespace RST
 	{
 		return lhs.find(rhs) != lhs.end();
 	}
+  
+  inline bool contains(std::string& lhs, std::string rhs)
+	{
+		return lhs.find(rhs) != std::string::npos;
+	}
+  inline bool rcontains(std::string& lhs, std::string rhs)
+	{
+		return lhs.rfind(rhs) != std::string::npos;
+	}
 }

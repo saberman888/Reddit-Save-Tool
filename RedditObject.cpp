@@ -2,13 +2,18 @@
 namespace RST {
   std::string RedditObject::GetAudioUrl()
   {
-    return URL + "/audio?source=fallback";
+      int ending = URL.rfind("/");
+      std::string audio_url = URL.substr(0, ending+1);
+      if (contains(URL, ".mp4"))
+      {
+          return audio_url + "DASH_audio.mp4";
+      }
+      else {
+          return audio_url + "audio";
+      }
   }
 
-  std::string RedditObject::GetVideoUrl()
-  {
-    return URL + "/DASH_" + std::to_string(Video.height)+".mp4";
-  }
+
 
   void RedditObject::MuxVideo(std::string source, std::string dest)
   {
@@ -57,15 +62,17 @@ namespace RST {
           } else if(DoesExist(data, "is_video") && get_bool(data, "is_video")){
               kind = VIDEO;
               
-              // Get the height only because when we download the video file
-              // it usually titled as DASH_{height} e.g DASH_1080.mp4
+              // Get the Video URL from fallback_url, and from that we can infer
+              // where the audio url will be
               auto redditvideo = data.at("media").at("reddit_video");
-              Video.height = get_int(redditvideo, "height");
-              Video.IsGif = get_bool(redditvideo, "is_gif");
-          } else {
+              URL = get_string(redditvideo, "fallback_url");
+              DASHPlaylistFile = get_string(redditvideo, "dash_url");
+              IsVideo = true;
+          } else if(!IsVideo){
               kind = LINKPOST;
-              if(data.contains("is_gallery") && get_bool(data, "is_gallery"))
+              if(data.contains("is_gallery") && get_bool(data, "is_gallery") && !data.at("gallery_data").is_null())
               {
+                  kind = LINKPOST;
                   Gallery.IsGallery = true;
                   for(auto& elem : data.at("gallery_data").at("items"))
                   {
@@ -78,8 +85,8 @@ namespace RST {
                       Gallery.Images.push_back(imageURL);
                   }
               }
+              URL = get_string(data, "url");
          }
-        URL = get_string(data, "url");
         title = get_string(data, "title");
         domain = get_string(data, "domain");
 

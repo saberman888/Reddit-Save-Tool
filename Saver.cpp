@@ -94,16 +94,10 @@ bool RST::Saver::ParseSaved(const std::string& buffer)
 {
 	using namespace SBJSON;
 	try {
-#ifndef NDEBUG
-    dump(buffer, "buffer.json");
-#endif
 		 	nlohmann::json root = nlohmann::json::parse(buffer);
-#ifndef NDEBUG
-      dump(root, "root.json");
-#endif
-            // See if there is any after tag
+      // See if there is any after tag
 			nlohmann::json data = root.at("data");
-            // Make sure after is not null. If it is, it means we've reached the end of the listing
+      // Make sure after is not null. If it is, it means we've reached the end of the listing
 			if (!data.at("after").is_null()) { // store it into after
 				after = data.at("after").get<std::string>();
 			}
@@ -111,38 +105,12 @@ bool RST::Saver::ParseSaved(const std::string& buffer)
 				after = std::string();
 			}
 			// If there is an after tag, it is pretty much a given
-			// that a listing is present too, so add that listing into content
+			// that a listing is present too, so add that listing into posts
 			for (auto& child : data.at("children"))
 			{
-#ifndef NDEBUG
-                dump(child, "child.json");
-#endif
-                RedditObject r;
-                r.Read(child);
-                
-                switch(r.kind)
-                {
-                    case SELFPOST:
-                        if(!contains(args, "--no-selfposts"))
-                            posts.push_back(r);
-                        break;
-                    case VIDEO:
-                        if(!contains(args, "--no-videos"))
-                            posts.push_back(r);
-                        break;
-                    case COMMENT:
-                        if(!contains(args, "--no-comments"))
-                            posts.push_back(r);
-                        break;
-                    case LINKPOST:
-                        if(!contains(args, "--no-images") || (ImgurAccess::IsImgurLink(r.URL) && !ImgurClientId.empty()))
-                            posts.push_back(r);
-                        break;
-                    case UNKNOWN:
-                        break;
-                    default:
-                        break;
-                }
+        RedditObject r;
+        r.Read(child);
+        posts.push_back(r);
 			}
 	} catch(nlohmann::json::exception& e) {
 		std::cerr << e.what() << std::endl;
@@ -156,23 +124,23 @@ RST::Saver::Saver(int argc, char* argv[]) : after(), ImgurClientId()
 
   if(ScanOptions(argc, argv) && LoadLogins()){
     // If on Windows ,just store everthing in the current working directory under Reddit
-    // If under Linux, store stuff in the home directory under /home/$USER/Pictures/Reddit
+    // If under Linux, store stuff in the home directory under /home/$USER/Pictures/Reddit/$REDDITUSERNAME
 #if defined(_WIN32) || defined(WIN32)
     MediaPath /= std::string("./Reddit/" + UserAccount.Username);
 #else
     char* home = std::getenv("HOME");
 
-      MediaPath /=
-        std::string(home)
-        +std::string("/Pictures/Reddit/"+UserAccount.Username);
+    MediaPath /=
+      std::string(home)
+      +std::string("/Pictures/Reddit/"+UserAccount.Username);
 
 #endif
     std::cout << "Writing to: " << MediaPath.string() << std::endl;
 
     if(AccessReddit() && GetSaved())
     {
-      std::cout << "Gathered a total of: " << posts.size() << " posts" << std::endl;
       FilterPosts();
+      std::cout << "Gathered a total of: " << posts.size() << " posts" << std::endl;
       #pragma omp parallel for
       for(auto& post : posts)
       {
@@ -241,28 +209,43 @@ bool RST::Saver::DownloadImage(RedditObject& post, fs::path destination, std::st
 
 bool RST::Saver::WritePost(RedditObject& post)
 {
+  if(post.Gallery.IsGallery || contains(post.URL, "imgur.com/a/"))
+    std::cout << "break!";
 	if(post.kind == VIDEO){
-		// Download audio and video
-		// if running on linux use /tmp to temporary store audio and video
-		fs::path temp = "/tmp";
-		auto result = Download(post.GetAudioUrl());
-		if(!result.AllGood())
-		{
-			std::cerr << "Warning: Failed to get audio from " << post.Id << std::endl;
-			std::cerr << "Error: " << result.HttpState<< " " << result.Message << std::endl;
-			return false;
-		}
-		post.Write(temp, "audio.mp4", result.buffer);
-		result = Download(post.GetVideoUrl());
-		if(!result.AllGood())
-		{
-			std::cerr << "Warning: Failed to get video from " << post.Id << std::endl;
-			std::cerr << "Error: " << result.HttpState << " " << result.Message << std::endl;
-			return false;
-		}
-		post.Write(temp, "video.mp4", result.buffer);
-		// and finally mux the audio and video together
-		post.MuxVideo(temp.string(), MediaPath.string());
+        auto video = Download(post.URL);
+        if (!video.AllGood())
+        {
+            std::cerr << "Error: Failed to get video from " << post.Id << std::endl;
+            std::cerr << "Error: " << video.HttpState << " " << video.Message << std::endl;
+            return false;
+        }
+        post.Write(MediaPath, "video.mp4", video.buffer);
+
+        auto dash = Download(post.DASHPlaylistFile);
+        if (!dash.AllGood())
+        {
+            std::cerr << "Error: Failed to get DASHPlaylist.mpd from " << post.Id << std::endl;
+            std::cerr << "Error: " << dash.HttpState << " " << dash.Message << std::endl;
+            return false;
+        }
+        // See if the video has any audio at all
+        if (std::regex_search(dash.buffer, std::regex("<BaseURL>(DASH_)audio(.mp4)</BaseURL>")))
+        {
+            auto audio  = Download(post.GetAudioUrl());
+            if (!audio.AllGood())
+            {
+                std::cerr << "Error: Failed to get audio from " << post.Id << std::endl;
+                std::cerr << "Error: " << audio.HttpState << " " << audio.Message << std::endl;
+                return false;
+            }
+            post.Write(MediaPath, "audio.mp4", audio.buffer);
+            // and finally mux the audio and video together
+            post.MuxVideo(MediaPath.string(), MediaPath.string());
+        }
+        // If it doesn't, just rename the existing mp4 we downloaded
+        else {
+            fs::rename(MediaPath / "video.mp4", MediaPath / (post.Id + ".mp4"));
+        }
 
 	} else if(post.kind == LINKPOST) {
         // If there is any imgur links, resolve them so we can have the links directly to the images
@@ -305,10 +288,16 @@ bool RST::Saver::ScanOptions(int argc, char* argv[])
   if(argc <= 1)
   {
     std::cout << "Not enough arguments!" << std::endl;
+    std::cout << "Flags: " << std::endl;
+    std::cout << "\t" << "-a/--acount [account] - Load a specific reddit account" << std::endl;
+    std::cout << "\t" << "--no-text - Filters out any comments and self posts" << std::endl;
+    std::cout << "\t" << "--no-selfposts - Filters out any selfposts" << std::endl;
+    std::cout << "\t" << "--no-comments - Filters out any comments" << std::endl;
+    std::cout << "\t" << "--no-images - Filters out any images" << std::endl;
+    std::cout << "\t" << "--only-video - Filters out any posts that aren't videos" << std::endl;
+    std::cout << "\t" << "--only-images - Filters out any posts that aren't images" << std::endl;
+    std::cout << "\t" << "--domain [domain],[domain2] - Filters out any posts that have said domain linked" << std::endl;
   }
-
-  //std::string filterArgs[] = {"--blacklist"}
-
 	for(int i = 1; i < argc; i++)
 	{
 		std::string j = argv[i];
@@ -337,11 +326,18 @@ bool RST::Saver::ScanOptions(int argc, char* argv[])
     } else if(j == "--domain" || j == "-D") {
         args["--domain"] = std::string(argv[i+1]);
         i++;
-    //} else if(std::any_of()) {
-      
     }
     else {
       std::cerr << j << " is not a valid argument." << std::endl;
+      std::cout << "Flags: " << std::endl;
+      std::cout << "\t" << "-a/--acount [account] - Load a specific reddit account" << std::endl;
+      std::cout << "\t" << "--no-text - Filters out any comments and self posts" << std::endl;
+      std::cout << "\t" << "--no-selfposts - Filters out any selfposts" << std::endl;
+      std::cout << "\t" << "--no-comments - Filters out any comments" << std::endl;
+      std::cout << "\t" << "--no-images - Filters out any images" << std::endl;
+      std::cout << "\t" << "--only-video - Filters out any posts that aren't videos" << std::endl;
+      std::cout << "\t" << "--only-images - Filters out any posts that aren't images" << std::endl; 
+      std::cout << "\t" << "--domain [domain],[domain2] - Filters out any posts that have said domain linked" << std::endl;
       success = false;
     }
   }
@@ -364,17 +360,28 @@ std::vector<std::string> RST::Saver::GetListOp(std::string option)
 
 void RST::Saver::FilterPosts()
 {
-    if(contains(args,"--domain"))
+    for (auto& arg : args)
     {
-        auto domains = GetListOp("--domain");
-        std::vector<RedditObject> tempPosts;
-        tempPosts.reserve(posts.size());
-        
-        std::copy_if(posts.begin(), posts.end(), std::back_inserter(tempPosts), [&domains](RedditObject& elem){ return (std::find(domains.begin(), domains.end(), elem.domain) != domains.end());});
-        tempPosts.shrink_to_fit();
-        posts = tempPosts;
-    } /*else if(contains(args, "--blacklist")){
-      
-    } else if(contains(args, "--whitelist")){
-    }*/
+        if (arg.first == "--domain")
+        {
+            auto domains = GetListOp("--domain");
+
+            auto it = std::remove_if(posts.begin(), posts.end(), [&domains](RedditObject& post) {
+                return std::any_of(domains.begin(), domains.end(), [&post](std::string domain) { return post.domain == domain; });
+                });
+            posts.erase(it, posts.end());
+        }
+        else if (arg.first == "--no-comments") {
+            std::erase_if(posts, [](RedditObject& post) { return post.kind == COMMENT; });
+        }
+        else if (arg.first == "--no-images") {
+            std::erase_if(posts, [](RedditObject& post) { return post.kind == LINKPOST; });
+        }
+        else if (arg.first == "--no-selfposts") {
+            std::erase_if(posts, [](RedditObject& post) { return post.kind == SELFPOST; });
+        }
+        else if (arg.first == "--no-video") {
+            std::erase_if(posts, [](RedditObject& post) { return post.kind == VIDEO; });
+        }
+    }
 }

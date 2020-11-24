@@ -26,6 +26,7 @@
 #include "sbjson.hpp"
 #include <cassert>
 #include "base.hpp"
+#include <regex>
 
 namespace fs = std::filesystem;
 typedef nlohmann::json Json;

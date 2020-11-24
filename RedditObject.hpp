@@ -6,7 +6,6 @@
 #include <fstream>
 #include "BasicRequest.hpp"
 #include <ctime>
-#include <sstream>
 #include "Imgur.hpp"
 
 namespace RST
@@ -26,7 +25,7 @@ namespace RST
 	class RedditObject
 	{
 	public:
-		RedditObject() : kind(UNKNOWN), URL(), Id(), text(), author(), permalink(), title(), domain(), created_utc(0l), Gallery{0}, Video { 0, false }{}
+		RedditObject() : kind(UNKNOWN), URL(), Id(), text(), author(), permalink(), title(), domain(), created_utc(0l), Gallery{ 0 }, IsVideo(false), DASHPlaylistFile(){}
 		Post kind;
 		std::string URL, Id, text, author, permalink, title, domain;
     time_t created_utc;
@@ -37,17 +36,13 @@ namespace RST
         std::vector<std::string> Images;
     }Gallery;
 
-    struct Videos
-		{
-			int height;
-			bool IsGif;
-    }Video;
+    bool IsVideo;
+	std::string DASHPlaylistFile;
 
     std::string GetAudioUrl();
-    std::string GetVideoUrl();
     void MuxVideo(std::string source, std::string dest);
 
-    void Write(fs::path filepath, std::string filename, const std::string& buffer);
+    void Write(fs::path filepath, const std::string filename, const std::string& buffer);
     void WriteText(fs::path filepath);
     void Read(nlohmann::json& child);
     void ResolveImgurLinks(std::string ClientId);
