@@ -3,30 +3,60 @@
 
 
 
-bool RST::Saver::LoadLogins()
+bool RST::Saver::LoadConfig()
+{
+    char* HOME = std::getenv("HOME");
+    std::string config;
+    if(fs::exists("settings.json"))
+    {
+        config = "./settings.json";
+    }
+#if defined(__unix__)
+    else if(fs::exists(std::string(HOME) +"/.config/reddit-saver/settings.json")) {
+        config = std::string(HOME) + "/.config/reddit-saver/settings.json";
+    } 
+#endif
+    else {
+        std::cerr << "Error, couldn't find a settings.json file" << std::endl;
+        std::cout << "Generating a template..." << std::endl;
+        std::ofstream out;
+#if defined(__unix__)
+        fs::create_directories(std::string(HOME) + "/.config/reddit-saver");
+        out.open(std::string(HOME) + "/.config/reddit-saver/settings.json", std::ios::out);
+        std::cout << "Writing to " << HOME << "/.config/reddit-saver/settings.json" << std::endl;
+#else
+        out.open("settings.json", std::ios::out);
+#endif
+
+        nlohmann::json settingsfilling ={
+        {"imgur_client_id", "IMGUR_CLIENT_ID_HERE"}};
+
+        Json account = {
+        {"client_id", "CLIENT_ID_HERE"},
+        {"secret", "SECRET_HERE"},
+        {"username", "USERNAME_HERE"},
+        {"password", "PASSWORD_HERE"},
+        {"useragent", "USERAGENT_HERE"}};
+
+        settingsfilling["accounts"].push_back(account);
+
+        out << settingsfilling.dump(4);
+        return false;
+    }
+    return LoadLogins(config);
+}
+
+bool RST::Saver::LoadLogins(std::string config)
 {
 	using namespace SBJSON;
 	bool success = false;
-	std::fstream input("settings.json", std::ios::in | std::ios::out);
+    
+
+	std::fstream input(config, std::ios::in | std::ios::out);
 	if (!input.good())
 	{
-		// If the config file containing accounts is not present, then write one with dummy values so the end user can fill it in
-		input.open("settings.json", std::ios::out);
-		nlohmann::json settingsfilling ={
-			{"imgur_client_id", "IMGUR_CLIENT_ID_HERE"}
-		};
-
-		Json account = {
-			{"client_id", "CLIENT_ID_HERE"},
-			{"secret", "SECRET_HERE"},
-			{"username", "USERNAME_HERE"},
-			{"password", "PASSWORD_HERE"},
-			{"useragent", "USERAGENT_HERE"}};
-
-			settingsfilling["accounts"].push_back(account);
-
-		input << settingsfilling.dump(4);
-		return success;
+    std::cerr << "Error, failed to open settings.json" << std::endl;
+    return success;
 	}
 	else {
 		// Read json from the file
@@ -54,8 +84,7 @@ bool RST::Saver::LoadLogins()
 			// Check if a Imgur Client ID is present
 			if (root.contains("imgur_client_id"))
 			{
-				// if it is, assign it to ImgurHandle.ClientId
-				//ImgurHandle->ClientId = root.at("imgur_client_id").get<std::string>();
+                // if it is, assign it to ImgurClientId
 				if(root.contains("imgur_client_id"))
 				{
 					ImgurClientId = root.at("imgur_client_id").get<std::string>();
@@ -122,7 +151,7 @@ bool RST::Saver::ParseSaved(const std::string& buffer)
 RST::Saver::Saver(int argc, char* argv[]) : after(), ImgurClientId()
 {
 
-  if(ScanOptions(argc, argv) && LoadLogins()){
+  if(ScanOptions(argc, argv) && LoadConfig()){
     // If on Windows ,just store everthing in the current working directory under Reddit
     // If under Linux, store stuff in the home directory under /home/$USER/Pictures/Reddit/$REDDITUSERNAME
 #if defined(_WIN32) || defined(WIN32)
@@ -141,8 +170,12 @@ RST::Saver::Saver(int argc, char* argv[]) : after(), ImgurClientId()
     {
       FilterPosts();
       std::cout << "Gathered a total of: " << posts.size() << " posts" << std::endl;
+#if defined(USE_OPENMP)
       #pragma omp parallel for
       for(auto& post : posts)
+#else
+      for(auto& post : posts)
+#endif
       {
         try {
           WritePost(post);
@@ -153,7 +186,7 @@ RST::Saver::Saver(int argc, char* argv[]) : after(), ImgurClientId()
       }
     }
   } else {
-    std::cout << "Failed to load account." << std::endl;
+    std::cout << "Failed to load account(s)." << std::endl;
   }
 }
 
@@ -289,7 +322,7 @@ bool RST::Saver::ScanOptions(int argc, char* argv[])
   {
     std::cout << "Not enough arguments!" << std::endl;
     std::cout << "Flags: " << std::endl;
-    std::cout << "\t" << "-a/--acount [account] - Load a specific reddit account" << std::endl;
+    std::cout << "\t" << "-a/--account [account] - Load a specific reddit account" << std::endl;
     std::cout << "\t" << "--no-text - Filters out any comments and self posts" << std::endl;
     std::cout << "\t" << "--no-selfposts - Filters out any selfposts" << std::endl;
     std::cout << "\t" << "--no-comments - Filters out any comments" << std::endl;
@@ -297,15 +330,21 @@ bool RST::Saver::ScanOptions(int argc, char* argv[])
     std::cout << "\t" << "--only-video - Filters out any posts that aren't videos" << std::endl;
     std::cout << "\t" << "--only-images - Filters out any posts that aren't images" << std::endl;
     std::cout << "\t" << "--domain [domain],[domain2] - Filters out any posts that have said domain linked" << std::endl;
+    return false;
   }
 	for(int i = 1; i < argc; i++)
 	{
 		std::string j = argv[i];
     if(j == "-a" || j == "--account")
     {
-      i++;
+     if(i+1 >= argc-1 )
+     {
+       std::cerr << "Error, missing an argument for -a/--account" << std::endl;
+       return false;
+     } else {
+       i++;
       args["account"] = std::string(argv[i]);
-      success = true;
+     }
     }
     else if (j == "--no-images" || j == "--no-selfposts" || j == "--no-comments" || j == "--no-videos") {
       args[j] = "0";
@@ -324,13 +363,18 @@ bool RST::Saver::ScanOptions(int argc, char* argv[])
       args["--no-selfposts"] = "0";
       args["--no-video"] = "0";
     } else if(j == "--domain" || j == "-D") {
+      if(i+1 > argc-1)
+      {
+        std::cerr << "Error, not enough arguments for --domain" << std::endl;
+      } else {
         args["--domain"] = std::string(argv[i+1]);
         i++;
+      }
     }
     else {
       std::cerr << j << " is not a valid argument." << std::endl;
       std::cout << "Flags: " << std::endl;
-      std::cout << "\t" << "-a/--acount [account] - Load a specific reddit account" << std::endl;
+      std::cout << "\t" << "-a/--account [account] - Load a specific reddit account" << std::endl;
       std::cout << "\t" << "--no-text - Filters out any comments and self posts" << std::endl;
       std::cout << "\t" << "--no-selfposts - Filters out any selfposts" << std::endl;
       std::cout << "\t" << "--no-comments - Filters out any comments" << std::endl;

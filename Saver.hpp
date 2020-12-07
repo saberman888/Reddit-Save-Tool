@@ -39,7 +39,8 @@ namespace RST
 	public:
 		Saver(int argc, char* argv[]);
 	private:
-		bool LoadLogins();
+        bool LoadConfig();
+		bool LoadLogins(std::string config);
 		// Gets 100 posts per iteration
 		bool GetSaved();
 		fs::path MediaPath;

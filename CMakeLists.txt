@@ -7,7 +7,7 @@ find_package(nlohmann_json REQUIRED)
 find_package(OpenMP)
 
 set(COMPILER "${CMAKE_CXX_COMPILER_ID}")
-option(OMP OFF)
+option(USE_OPENMP OFF)
 
 if(COMPILER MATCHES "MSVC")
     set(CMAKE_CXX_FLAGS "/W2 ")
@@ -23,7 +23,7 @@ if(CMAKE_BUILD_TYPE|"Release")
   add_compile_option(-DNDEBUG=1)
 endif()
 
-add_compile_options(-DVERSION="2020-11-02")
+add_compile_options(-DVERSION="2020-12-07")
 
 add_executable(reddit-saver base.cpp RedditObject.cpp BasicRequest.cpp Imgur.cpp Reddit.cpp Saver.cpp Source.cpp )
 
@@ -31,7 +31,7 @@ if("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
   set(STDFS stdc++fs)
 endif()
 
-if(OMP)
+if(USE_OPENMP)
   set(INCLUDE_OMP OpenMP::OpenMP_CXX)
 endif()
 target_link_libraries(reddit-saver LINK_PUBLIC ${STDFS} nlohmann_json::nlohmann_json curl ${INCLUDE_OMP})
