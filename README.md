@@ -39,9 +39,11 @@ reddot-saver -a [ACCOUNT]
 ## Building RSA/RST
 
 RST depends on the following dependencies:
-**** [libcURL](https://curl.haxx.se)
+
+********** [libcURL](https://curl.haxx.se)
 * [nlohmann's json](https://github.com/nlohmann/json)
 * OpenMP (optional)
+
 For a release build, call -DCMAKE_BUILD_TYPE=Release with cmake and for a debug build use -DCMAKE_BUILD_TYPE=Debug
 You can add -DUSE_OPENMP to speed up downloading, but the output is a bit messy
 
