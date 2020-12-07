@@ -28,6 +28,8 @@ An example settings.json using two accounts would look like this:
     "imgur_client_id": "IMGUR CLIENT ID"
 }
 ```
+
+settings.json can be stored in two places, in the root or in /home/$USER/.config/reddit-saver/ if you're on linux
 Once you're done, just call reddit-saver with the -a or --account flag on your username and it should start.
 
 ```
@@ -36,8 +38,12 @@ reddot-saver -a [ACCOUNT]
 
 ## Building RSA/RST
 
-For a release build, simply calling cmake will do. However, if you want a debug build, add -DCMAKE_BUILD_TYPE=Debug and -DCURL_VERBOSE=1 of you want cURL verbose enabled.
-To have a dependency error free compilation, you're going to need [libcURL](https://curl.haxx.se) and [nlohmann's json](https://github.com/nlohmann/json) header library before initiating cmake configuration.
+RST depends on the following dependencies:
+**** [libcURL](https://curl.haxx.se)
+* [nlohmann's json](https://github.com/nlohmann/json)
+* OpenMP (optional)
+For a release build, call -DCMAKE_BUILD_TYPE=Release with cmake and for a debug build use -DCMAKE_BUILD_TYPE=Debug
+You can add -DUSE_OPENMP to speed up downloading, but the output is a bit messy
 
 ```
 cmake -G "COMPILER_HERE"
@@ -45,5 +51,4 @@ make
 ```
 
 ## Known Issues / Notes
-1. Reddit is having an issue where retrieving videos' video or audio could result in 403. I have yet to figure out a work around.
 
