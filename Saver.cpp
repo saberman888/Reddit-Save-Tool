@@ -317,7 +317,6 @@ bool RST::Saver::WritePost(RedditObject& post)
 
 bool RST::Saver::ScanOptions(int argc, char* argv[])
 {
-	bool success = false;
   if(argc <= 1)
   {
     std::cout << "Not enough arguments!" << std::endl;
@@ -337,7 +336,7 @@ bool RST::Saver::ScanOptions(int argc, char* argv[])
 		std::string j = argv[i];
     if(j == "-a" || j == "--account")
     {
-     if(i+1 >= argc-1 )
+     if(i+1 > argc-1 )
      {
        std::cerr << "Error, missing an argument for -a/--account" << std::endl;
        return false;
@@ -366,6 +365,7 @@ bool RST::Saver::ScanOptions(int argc, char* argv[])
       if(i+1 > argc-1)
       {
         std::cerr << "Error, not enough arguments for --domain" << std::endl;
+        return false;
       } else {
         args["--domain"] = std::string(argv[i+1]);
         i++;
@@ -382,10 +382,10 @@ bool RST::Saver::ScanOptions(int argc, char* argv[])
       std::cout << "\t" << "--only-video - Filters out any posts that aren't videos" << std::endl;
       std::cout << "\t" << "--only-images - Filters out any posts that aren't images" << std::endl; 
       std::cout << "\t" << "--domain [domain],[domain2] - Filters out any posts that have said domain linked" << std::endl;
-      success = false;
+      return false;
     }
   }
-  return success;
+  return true;
 }
 
 
