@@ -40,7 +40,7 @@ reddot-saver -a [ACCOUNT]
 
 RST depends on the following dependencies:
 
-********** [libcURL](https://curl.haxx.se)
+* [libcURL](https://curl.haxx.se)
 * [nlohmann's json](https://github.com/nlohmann/json)
 * OpenMP (optional)
 
