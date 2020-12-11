@@ -29,7 +29,7 @@ bool RST::Saver::LoadConfig()
 #endif
 
         nlohmann::json settingsfilling ={
-        {"imgur_client_id", "IMGUR_CLIENT_ID_HERE"}};
+        {"imgur_client_id", nullptr}};
 
         Json account = {
         {"client_id", "CLIENT_ID_HERE"},
@@ -85,7 +85,7 @@ bool RST::Saver::LoadLogins(std::string config)
 			if (root.contains("imgur_client_id"))
 			{
                 // if it is, assign it to ImgurClientId
-				if(root.contains("imgur_client_id"))
+				if(root.contains("imgur_client_id") && !root.at("imgur_client_id").is_null())
 				{
 					ImgurClientId = root.at("imgur_client_id").get<std::string>();
 				}
@@ -242,8 +242,6 @@ bool RST::Saver::DownloadImage(RedditObject& post, fs::path destination, std::st
 
 bool RST::Saver::WritePost(RedditObject& post)
 {
-  if(post.Gallery.IsGallery || contains(post.URL, "imgur.com/a/"))
-    std::cout << "break!";
 	if(post.kind == VIDEO){
         auto video = Download(post.URL);
         if (!video.AllGood())
@@ -299,7 +297,7 @@ bool RST::Saver::WritePost(RedditObject& post)
                     std::cerr << "Error to download " << post.URL << std::endl;
                     return result;
                 }
-                std::cout << "Wrote Gallery " << post.title << ": " << i << " out of " << post.Gallery.Images.size()-1 << std::endl;
+                std::cout << "Wrote Gallery: " << post.title << ": " << i << " out of " << post.Gallery.Images.size()-1 << std::endl;
             }
         } else {
            bool result = DownloadImage(post, MediaPath);
@@ -321,6 +319,7 @@ bool RST::Saver::ScanOptions(int argc, char* argv[])
   {
     std::cout << "Not enough arguments!" << std::endl;
     std::cout << "Flags: " << std::endl;
+    std::cout << "\t" << "-v/--version - Print the current build version" << std::endl;
     std::cout << "\t" << "-a/--account [account] - Load a specific reddit account" << std::endl;
     std::cout << "\t" << "--no-text - Filters out any comments and self posts" << std::endl;
     std::cout << "\t" << "--no-selfposts - Filters out any selfposts" << std::endl;
@@ -370,10 +369,13 @@ bool RST::Saver::ScanOptions(int argc, char* argv[])
         args["--domain"] = std::string(argv[i+1]);
         i++;
       }
+    } else if(j == "-v" || j == "--version") {
+	    std::cout << "Reddit Save Tool version " << VERSION << std::endl;
     }
     else {
       std::cerr << j << " is not a valid argument." << std::endl;
       std::cout << "Flags: " << std::endl;
+      std::cout << "\t" << "-v/--version - Print the current build version" << std::endl;
       std::cout << "\t" << "-a/--account [account] - Load a specific reddit account" << std::endl;
       std::cout << "\t" << "--no-text - Filters out any comments and self posts" << std::endl;
       std::cout << "\t" << "--no-selfposts - Filters out any selfposts" << std::endl;
