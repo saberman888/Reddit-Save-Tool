@@ -1,14 +1,38 @@
 #include "base.hpp"
 
-std::vector<std::string> RST::splitString(std::string data, char delimeter)
+namespace RST
 {
-  std::vector<std::string> tokens;
-  std::string token;
-  std::stringstream input(data);
-  while(std::getline(input, token, delimeter))
-  {
-    tokens.push_back(token);
+  bool Write(std::filesystem::path destination, const std::string& buffer){
+    std::ofstream out(destination.string(), std::ios::out | std::ios::binary);
+    if(out.good()){
+      out << buffer;
+      return true;
+    } else {
+      return false;
+    }
   }
-  return tokens;
-}
 
+  std::vector<std::string> splitString(std::string data, char delimeter)
+  {
+    std::string temp;
+    std::vector<std::string> returnList;
+    for(auto ch : data){
+      if(ch == delimeter){
+        returnList.push_back(temp);
+        temp.clear();
+      } else {
+        temp += ch;
+      }
+    }
+    return returnList;
+  }
+
+  State Download(const std::string URL){
+    BasicRequest Handle;
+    Handle.Setup(URL);
+    State result = Handle.SendRequest();
+    Handle.Cleanup();
+    return result;
+  }
+
+}

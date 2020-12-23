@@ -29,5 +29,7 @@ namespace ImgurAccess
     
     std::vector<std::string> GetAlbum(std::string AlbumHash, std::string ClientId); 
     std::string GetImage(std::string ImageHash, std::string ClientId);
+    std::vector<std::string> ResolveAlbumURLs(std::string URL, std::string ClientId);
+
 
 }

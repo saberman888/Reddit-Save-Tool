@@ -5,41 +5,31 @@
 #include <string>
 namespace SBJSON{
 	template<typename T>
-	static T get_value(const nlohmann::json& data, std::string tag)
+	T GetValue(const nlohmann::json& data, std::string tag)
 	{
-	    try {
-		return data.at(tag).get<T>();
-	    }
-	    catch (nlohmann::json::exception& e) {
-		std::cerr << "Exception triggered by tag: " << tag << std::endl;
-		std::cerr << e.what() << std::endl;
-		throw;
-	    }
-	}
+    try{
+      return data.at(tag).get<T>();
+    } catch(nlohmann::json::exception& e) {
+      std::cerr << e.what() << std::endl;
+    }
+    return data.at(tag).get<T>();
+  }
 
-	inline bool get_bool(const nlohmann::json& data, std::string tag)
-	{
-	    return get_value<bool>(data, tag);
-	}
+  template<typename T>
+  bool TryGetValue(const nlohmann::json& data, std::string tag, T& out)
+  {
+    if(data.contains(tag)){
+      auto jtag = data.at(tag);
+      if(jtag.is_null()){
+        out = jtag.get<T>();
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+    return false;
+  }
 
-	inline std::string get_string(const nlohmann::json& data, std::string tag)
-	{
-	    return get_value<std::string>(data, tag);
-	}
-
-	inline int get_int(const nlohmann::json& data, std::string tag)
-	{
-	    return get_value<int>(data, tag);
-	}
-
-	inline time_t get_long(const nlohmann::json& data, std::string tag)
-	{
-	    return get_value<time_t>(data, tag);
-	}
-
-
-	inline bool DoesExist(const nlohmann::json& data, std::string tag)
-	{
-	    return data.contains(tag);
-	}
 }

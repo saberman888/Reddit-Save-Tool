@@ -74,4 +74,18 @@ namespace ImgurAccess
 		return Images;
 	}
 
+  std::vector<std::string> ResolveAlbumURLs(std::string URL, std::string ClientId)
+  {
+      std::vector<std::string> Images;
+      if(IsImgurLink(URL) && !IsDirect(URL))
+      {
+          if(IsAlbum(URL))
+          {
+              Images = ImgurAccess::GetAlbum(URL, ClientId);
+          }
+      }
+    return Images;
+  }
+
+
 }

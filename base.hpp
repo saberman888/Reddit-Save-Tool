@@ -3,6 +3,9 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <filesystem>
+#include <fstream>
+#include "BasicRequest.hpp"
 
 namespace RST
 {
@@ -21,4 +24,7 @@ namespace RST
 	{
 		return lhs.rfind(rhs) != std::string::npos;
 	}
+
+  bool Write(std::filesystem::path destination, const std::string& buffer);
+  State Download(const std::string URL);
 }
