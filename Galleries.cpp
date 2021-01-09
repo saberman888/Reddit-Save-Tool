@@ -2,43 +2,42 @@
 
 namespace RST
 {
-	Gallery::Gallery(const std::string& json)
+	Gallery::Gallery(const nlohmann::json& json)
 	{
 		Read(json);
 	}
 
-	Gallery::Gallery(const std::string& json, std::string ImgurClientId) : ImgurClientId(ImgurClientId)
+	Gallery::Gallery(const nlohmann::json& json, std::string ImgurClientId) : ImgurClientId(ImgurClientId)
 	{
 		Read(json);
 	}
 
-	void Gallery::Read(const std::string& json)
+	void Gallery::Read(const nlohmann::json& json, bool ReadDomain)
 	{
 		using namespace SBJSON;
 		RedditCommon::Read(json);
-		if(!ImgurClientId.empty()){
-			nlohmann::json root = nlohmann::json::parse(json);
-			for(auto& image : root.at("gallery_data").at("item"))
+		if (ImgurClientId.empty()) {
+			for (auto& image : json.at("gallery_data").at("items"))
 			{
 				std::string mediaId = GetValue<std::string>(image, "media_id");
-				auto mediaMetadata = image.at("media_metadata").at(mediaId);
-				
+				auto mediaMetadata = json.at("media_metadata").at(mediaId);
+
 				std::string imageExtension = splitString(GetValue<std::string>(mediaMetadata, "m"), '/')[1];
 				std::string imageURL = "https://i.reddit.it/" + mediaId + "." + imageExtension;
 				Images.push_back(imageURL);
-				
-
 			}
 		}
 	}
-	
-	bool Gallery::Write(std::filesystem::path dest){
+
+	bool Gallery::Write(std::filesystem::path dest) {
 		auto images = GetImages();
-		for(size_t i = 0; i < images.size(); i++){
+		for (size_t i = 0; i < images.size(); i++) {
 			auto image = images[0];
 			auto imageData = Download(image);
-			if(imageData.AllGood()){
-				RST::Write(dest / (Id + RST::GetImageExtension(imageData)), imageData.buffer);
+			if (imageData.AllGood()) {
+				auto ContentType = splitString(imageData.ContentType, '/');
+				if (ContentType[0] == "image")
+					RST::Write(dest / (Id + "." + ContentType[1]), imageData.buffer);
 			}
 		}
 		return true;
@@ -46,10 +45,11 @@ namespace RST
 
 	const std::vector<std::string> Gallery::GetImages()
 	{
-		if(!ImgurClientId.empty())
+        if (ImgurClientId.empty())
 		{
 			return Images;
-		} else {
+		}
+		else {
 			return ImgurAccess::ResolveAlbumURLs(URL, ImgurClientId);
 		}
 	}
