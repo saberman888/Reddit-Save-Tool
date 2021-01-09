@@ -19,7 +19,6 @@
 #include "Reddit.hpp"
 #include "BasicRequest.hpp"
 #include <filesystem>
-#include "RedditObject.hpp"
 #include <fstream>
 #include <cstdlib>
 #include <utility>

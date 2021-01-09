@@ -5,7 +5,6 @@
 #include <sstream>
 #include <filesystem>
 #include <fstream>
-#include <regex>
 #include "BasicRequest.hpp"
 
 namespace RST
