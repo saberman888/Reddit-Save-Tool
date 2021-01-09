@@ -52,3 +52,7 @@ Makefile
 *.txt
 *.json
 reddit-saver
+/.swp
+/CMakeLists.txt.user.2c7c9b6
+/.RedditObject.hpp.swp
+/build.kdevelop
