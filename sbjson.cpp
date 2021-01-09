@@ -2,19 +2,23 @@
 
 namespace SBJSON
 {
+
 	bool TryGetBool(const nlohmann::json& data, std::string tag)
 	{
-		if(data.contains(tag))
+		if (data.contains(tag))
 		{
-			if(!data.at(tag).is_null())
+			if (!data.at(tag).is_null())
 			{
 				return data.at(tag).get<bool>();
-			} else {
+			}
+			else {
 				return false;
 			}
-		} else {
+		}
+		else {
 			return false;
 		}
 	}
+
 
 }
