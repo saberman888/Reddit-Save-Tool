@@ -2,19 +2,27 @@
 
 namespace RST
 {
-	void RedditCommon::Read(const std::string& json)
-        {
-                using namespace SBJSON;
+	void RedditCommon::Read(const nlohmann::json& json, bool ReadDomain)
+	{
+		using namespace SBJSON;
 
-                nlohmann::json root = nlohmann::json::parse(json);
+		if (!json.contains("url"))
+		{
+			URL = GetValue<std::string>(json, "link_url");
+		}
+		else {
+			URL = GetValue<std::string>(json, "url");
+		}
 
-                URL = GetValue<std::string>(root, "url");
-                Id = GetValue<std::string>(root, "id");
-                Author = GetValue<std::string>(root, "author");
-                Permalink = GetValue<std::string>(root, "permalink");
-                Domain = GetValue<std::string>(root, "domain"); 
-                CreatedUTC = GetValue<time_t>(root, "created_utc");
-        }
+		Id = GetValue<std::string>(json, "id");
+		Author = GetValue<std::string>(json, "author");
+		Permalink = GetValue<std::string>(json, "permalink");
+		if (ReadDomain)
+			Domain = GetValue<std::string>(json, "domain");
+		else
+			Domain = "RST_NO_DOMAIN_FOUND";
+		CreatedUTC = GetValue<time_t>(json, "created_utc");
+	}
 
 };
 
