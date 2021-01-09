@@ -2,51 +2,41 @@
 
 namespace RST
 {
-		Image::Image(const std::string& json)
-		{
-			RedditCommon::Read(json);
+	Image::Image(const nlohmann::json& json)
+	{
+		RedditCommon::Read(json);
+	}
+
+	Image::Image(const nlohmann::json& json, std::string
+		ImgurClientId) : ImgurClientId(ImgurClientId)
+	{
+		RedditCommon::Read(json);
+	}
+
+	std::string Image::GetImage() {
+		if (!ImgurClientId.empty()) {
+			return ImgurAccess::GetImage(URL,
+				ImgurClientId);
 		}
-		
-		Image::Image(const std::string& json, std::string 
-ImgurClientId) : ImgurClientId(ImgurClientId)
-		{
-			RedditCommon::Read(json);
+		else {
+			return URL;
 		}
-		
-		std::string Image::GetImage(){
-			if(!ImgurClientId.empty()){
-				return ImgurAccess::GetImage(URL, 
-ImgurClientId);
-			} else {
-				return URL;
-			}
+	}
+
+
+	bool Image::Write(std::filesystem::path dest) {
+		auto image = Download(URL);
+		if (!image.AllGood()) {
+			std::cerr << "Error, failed to get image " << URL << std::endl;
+			std::cerr << image.HttpState << " " << image.Message << std::endl;
+
+			return false;
 		}
-		
-		std::string GetImageExtension(State& response)
-		{
-			auto ContentType = 
-splitString(splitString(response.ContentType, ';')[0], '/');
-			if(ContentType[0] == "image"){
-				std::string extension = "." + ContentType[1];
-				return extension;
-			} else {
-				return "";
-			}
+		auto ContentType = splitString(image.ContentType, '/');
+
+		if (ContentType[0] == "image") {
+			RST::Write(dest / (Id + "." + ContentType[1]), image.buffer);
 		}
-		
-		bool Image::Write(std::filesystem::path dest){
-			auto image = Download(URL);
-			if(!image.AllGood()){
-				std::cerr << "Error, failed to get image " << 
-URL << std::endl;
-				std::cerr << image.HttpState << " " << 
-image.Message << std::endl;
-			
-				return false;
-			}
-			// 
-			RST::Write(dest / (Id + GetImageExtension(image)), 
-image.buffer);
-			return true;
-		}
+		return true;
+	}
 };
