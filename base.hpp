@@ -5,6 +5,7 @@
 #include <sstream>
 #include <filesystem>
 #include <fstream>
+#include <iosfwd>
 #include "BasicRequest.hpp"
 
 namespace RST
@@ -27,5 +28,6 @@ namespace RST
 
 	bool Write(std::filesystem::path destination, const std::string& buffer);
 	State Download(const std::string URL);
+	int Progress(void* ptr, double TotalDownloaded, double NowDownloaded, double TotalToDownload);
 	std::string SearchAndReplace(std::string Input, const std::string ToBeReplaced, const std::string Replacement);
 }
