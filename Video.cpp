@@ -40,11 +40,12 @@ namespace RST
 				return false;
 			}
 			RST::Write(dest / (Id + "_audio.mp4"), audio.buffer);
+			Mux(dest);
 		}
 		else {
 			RST::Write(dest / (Id + ".mp4"), video.buffer);
 		}
-		Mux(dest / (Id + ".mkv"));
+		
 		return true;
 	}
 
@@ -84,14 +85,13 @@ namespace RST
 
 		std::filesystem::path video = source / (Id + "_video.mp4");
 		std::filesystem::path audio = source / (Id + "_audio.mp4");
-		std::string ffmpegFullCommand;
 
-		ffmpegFullCommand = SearchAndReplace(ffmpegCommand, "{video_source}", video.string());
-		ffmpegFullCommand = SearchAndReplace(ffmpegCommand, "{audio_source}", audio.string());
-		ffmpegFullCommand = SearchAndReplace(ffmpegCommand, "{destination}", source.string());
+		ffmpegCommand = SearchAndReplace(ffmpegCommand, "{video_source}", video.string());
+		ffmpegCommand = SearchAndReplace(ffmpegCommand, "{audio_source}", audio.string());
+		ffmpegCommand = SearchAndReplace(ffmpegCommand, "{destination}", source.string());
 
 
-		std::system(ffmpegFullCommand.c_str());
+		std::system(ffmpegCommand.c_str());
 		std::filesystem::remove(video);
 		std::filesystem::remove(audio);
 
