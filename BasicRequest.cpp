@@ -135,7 +135,6 @@ State BasicRequest::SendRequest()
 	assert(Handle != nullptr);
 	if (headers != nullptr)
 		SetOpt(CURLOPT_HTTPHEADER, headers);
-	std::cout << URL << std::endl;
 	SetOpt(CURLOPT_URL, URL.c_str());
 	Response->result = curl_easy_perform(Handle);
 
