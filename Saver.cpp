@@ -191,7 +191,9 @@ RST::Saver::Saver(int argc, char* argv[]) : after(), ImgurClientId()
 		// If on Windows ,just store everthing in the current working directory under Reddit
 		// If under Linux, store stuff in the home directory under /home/$USER/Pictures/Reddit/$REDDITUSERNAME
 #if defined(_WIN32) || defined(WIN32)
-		MediaPath /= std::string("Reddit/" + UserAccount.Username);
+		MediaPath /= fs::current_path();
+		MediaPath /= "Reddit";
+		MediaPath /= UserAccount.Username;
 #else
 		char* home = std::getenv("HOME");
 
@@ -205,6 +207,7 @@ RST::Saver::Saver(int argc, char* argv[]) : after(), ImgurClientId()
 		if (AccessReddit() && GetSaved())
 		{
 			std::cout << "Gathered a total of: " << posts.size() << " posts" << std::endl;
+			fs::create_directories(MediaPath);
 #if defined(USE_OPENMP)
 #pragma omp parallel for
 			for (auto& post : posts)
