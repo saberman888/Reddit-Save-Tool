@@ -22,9 +22,9 @@ if(CMAKE_BUILD_TYPE|"Release")
   add_compile_option(-DNDEBUG=1)
 endif()
 
-add_compile_options(-DVERSION="2020-12-10")
+add_compile_options(-DVERSION="2021-01-15RC")
 
-add_executable(reddit-saver BasicRequest.cpp base.cpp sbjson.cpp RedditCommon.cpp Galleries.cpp Comment.cpp SelfPost.cpp Image.cpp Video.cpp RedditObject.cpp Imgur.cpp Reddit.cpp Saver.cpp Source.cpp )
+add_executable(reddit-saver BasicRequest.cpp base.cpp sbjson.cpp RedditCommon.cpp Galleries.cpp Comment.cpp SelfPost.cpp Image.cpp Video.cpp Imgur.cpp Reddit.cpp Saver.cpp Source.cpp )
 
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
   set(STDFS stdc++fs)
