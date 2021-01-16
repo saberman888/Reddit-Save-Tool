@@ -23,7 +23,7 @@ namespace RST
 				auto mediaMetadata = json.at("media_metadata").at(mediaId);
 
 				std::string imageExtension = splitString(GetValue<std::string>(mediaMetadata, "m"), '/')[1];
-				std::string imageURL = "https://i.reddit.it/" + mediaId + "." + imageExtension;
+				std::string imageURL = "https://i.redd.it/" + mediaId + "." + imageExtension;
 				Images.push_back(imageURL);
 			}
 		}
@@ -36,8 +36,14 @@ namespace RST
 			auto imageData = Download(image);
 			if (imageData.AllGood()) {
 				auto ContentType = splitString(imageData.ContentType, '/');
-				if (ContentType[0] == "image")
+				if (ContentType[0] == "image") {
+					if (!std::filesystem::exists(dest))
+					{
+						std::filesystem::create_directories(dest);
+					}
+
 					RST::Write(dest / (Id + "." + ContentType[1]), imageData.buffer);
+				}
 			}
 		}
 		return true;
