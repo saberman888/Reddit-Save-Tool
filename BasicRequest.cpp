@@ -10,6 +10,8 @@ static size_t writedat(char* buffer, size_t size, size_t nmemb, std::string& des
 
 void BasicRequest::Setup(std::string URL, bool POST)
 {
+	std::call_once(ginitFlag, []() { if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) { throw std::runtime_error("curl_global_init failed to initialize!"); atexit(curl_global_cleanup); }});
+
 	Handle = curl_easy_init();
 	if (!Handle)
 	{
@@ -194,20 +196,3 @@ std::string BasicRequest::UTCToString(time_t time, std::string format)
     return std::string(buffer);
 }
 
-
-
-
-_BasicRequestRAII::_BasicRequestRAII()
-{
-	CURLcode Result = curl_global_init(CURL_GLOBAL_ALL);
-	if (Result != CURLE_OK)
-	{
-		throw std::runtime_error("Failed to initialize curl global init");
-	}
-}
-
-
-_BasicRequestRAII::~_BasicRequestRAII()
-{
-	curl_global_cleanup();
-}

@@ -14,7 +14,6 @@ using namespace std;
  */
 int main(int argc, char* argv[])
 {
-	BasicRequestRAII braii;
 	RST::Saver start(argc, argv);
 	return 0;
 }

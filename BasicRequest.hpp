@@ -9,6 +9,7 @@
 #include <map>
 #include <exception>
 #include <ctime>
+#include <mutex>
 
 class State
 {
@@ -22,15 +23,8 @@ public:
 	bool AllGood() { return (Message.empty() && HttpState == 200 && result == CURLE_OK); }
 };
 
-
-/*
-	An RAII struct that manages curl_global_inir and curl_global_cleanup
-*/
-typedef struct _BasicRequestRAII
-{
-	_BasicRequestRAII();
-	~_BasicRequestRAII();
-}BasicRequestRAII;
+// once flag for initialization of curl_global_init
+static std::once_flag ginitFlag;
 
 /*
 	Pretty basic cURL wrapper made to do one request at a time, which is ideal for this project
