@@ -16,13 +16,17 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
     set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -ggdb3")
 endif()
 
+if(UNIX)
+    set(CMAKE_INSTALL_PREFIX "/usr/local/bin")
+endif(UNIX)
+
 
 
 if(CMAKE_BUILD_TYPE|"Release")
   add_compile_option(-DNDEBUG=1)
 endif()
 
-add_compile_options(-DVERSION="2021-01-15RC")
+add_compile_options(-DVERSION="2021-01-18RC")
 
 add_executable(reddit-saver BasicRequest.cpp base.cpp sbjson.cpp RedditCommon.cpp Galleries.cpp Comment.cpp SelfPost.cpp Image.cpp Video.cpp Imgur.cpp Reddit.cpp Saver.cpp Source.cpp )
 
@@ -33,4 +37,4 @@ endif()
 if(USE_OPENMP)
   set(INCLUDE_OMP OpenMP::OpenMP_CXX)
 endif()
-target_link_libraries(reddit-saver LINK_PUBLIC ${STDFS} nlohmann_json::nlohmann_json curl ${INCLUDE_OMP})
+target_link_libraries(reddit-saver LINK_PUBLIC ${STDFS} nlohmann_json::nlohmann_json CURL::libcurl ${INCLUDE_OMP})
