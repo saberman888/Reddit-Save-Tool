@@ -216,6 +216,7 @@ RST::Saver::Saver(int argc, char* argv[]) : after(), ImgurClientId()
 #endif
 			{
 				try {
+					std::cout << "Writing: " << (*post)->URL << " from " << (*post)->Permalink << std::endl;
 					(*post)->Write(MediaPath);
 				}
 				catch (std::exception& e) {
